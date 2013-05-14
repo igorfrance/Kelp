@@ -1,0 +1,12 @@
+bin/
+obj/
+tmp/
+log/
+lib/packages
+*.user
+*.suo
+*.resharper
+*.Resharper
+*.favdoc
+*.tf1
+*.tfb
