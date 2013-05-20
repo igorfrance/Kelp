@@ -2,7 +2,7 @@ bin/
 obj/
 tmp/
 log/
-lib/packages
+.nuget/packages
 *.user
 *.suo
 *.resharper
