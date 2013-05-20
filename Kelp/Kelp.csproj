@@ -128,23 +128,23 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="AForge">
-      <HintPath>.nuget\packages\AForge.2.2.4\lib\AForge.dll</HintPath>
+      <HintPath>$(SolutionDir).nuget\packages\AForge.2.2.4\lib\AForge.dll</HintPath>
     </Reference>
     <Reference Include="AForge.Imaging">
-      <HintPath>.nuget\packages\AForge.Imaging.2.2.4\lib\AForge.Imaging.dll</HintPath>
+      <HintPath>$(SolutionDir).nuget\packages\AForge.Imaging.2.2.4\lib\AForge.Imaging.dll</HintPath>
     </Reference>
     <Reference Include="AForge.Math">
-      <HintPath>.nuget\packages\AForge.Math.2.2.4\lib\AForge.Math.dll</HintPath>
+      <HintPath>$(SolutionDir).nuget\packages\AForge.Math.2.2.4\lib\AForge.Math.dll</HintPath>
     </Reference>
     <Reference Include="AjaxMin, Version=4.91.4875.26877, Culture=neutral, PublicKeyToken=21ef50ce11b5d80f, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>.nuget\packages\AjaxMin.4.91.4875.26882\lib\net40\AjaxMin.dll</HintPath>
+      <HintPath>$(SolutionDir).nuget\packages\AjaxMin.4.91.4875.26882\lib\net40\AjaxMin.dll</HintPath>
     </Reference>
     <Reference Include="log4net">
-      <HintPath>.nuget\packages\log4net.2.0.0\lib\net40-full\log4net.dll</HintPath>
+      <HintPath>$(SolutionDir).nuget\packages\log4net.2.0.0\lib\net40-full\log4net.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json">
-      <HintPath>.nuget\packages\Newtonsoft.Json.5.0.5\lib\net40\Newtonsoft.Json.dll</HintPath>
+      <HintPath>$(SolutionDir).nuget\packages\Newtonsoft.Json.5.0.5\lib\net40\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core">
