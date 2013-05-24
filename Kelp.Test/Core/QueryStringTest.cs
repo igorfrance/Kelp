@@ -117,4 +117,30 @@ namespace Kelp.Test.Core
 
 		private It Should_contain_only_two_entries = () => q.Count.ShouldEqual(2);
 	}
+
+	[Subject(typeof(QueryString)), Tags(Categories.Core)]
+	public class When_using_custom_separator_chars
+	{
+		It Separates_pairs_using_ampersand = () => 
+		{
+			var q = new QueryString(new[] { '&' }, "A=1&B=2&C=3");
+			q.Count.ShouldEqual(3);
+			q["A"].ShouldEqual("1");
+		};
+
+		It Separates_pairs_using_pipe = () =>
+		{
+			var q = new QueryString(new[] { '|' }, "A=1|B=2|C=3");
+			q.Count.ShouldEqual(3);
+			q["C"].ShouldEqual("3");
+		};
+
+		It Separates_pairs_using_ampersand_and_pipe = () =>
+		{
+			var q = new QueryString(new[] { '&', '|' }, "A=1&B=2|C=3");
+			q.Count.ShouldEqual(3);
+			q["B"].ShouldEqual("2");
+		};
+	}
+
 }

@@ -30,14 +30,31 @@ namespace Kelp
 	/// </summary>
 	public class QueryString : NameValueCollection, IXmlConvertible
 	{
-		private const char KeyValueSeparator = '=';
-		private static readonly char[] PairSeparators = new[] { '&' };
+		private const char DefaultKeyValueSeparator = '=';
+		private static readonly char[] DefaultPairSeparators = new[] { '&' };
+
+		private char[] pairSeparators = DefaultPairSeparators;
+		private char keyValueSeparator = DefaultKeyValueSeparator;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="QueryString"/> class.
 		/// </summary>
 		public QueryString()
 		{
+		}
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="QueryString" /> class, using the specified <paramref name="pairSeparators"/>
+		/// and optional <paramref name="keyValueSeparator"/>.
+		/// </summary>
+		/// <param name="pairSeparators">The chars that can be used as key/value pair separators.</param>
+		/// <param name="keyValueSeparator">The character that separates the key from the value.</param>
+		public QueryString(char[] pairSeparators, char keyValueSeparator = DefaultKeyValueSeparator)
+		{
+			if (pairSeparators != null && pairSeparators.Length != 0)
+				this.pairSeparators = pairSeparators;
+
+			this.keyValueSeparator = keyValueSeparator;
 		}
 
 		/// <summary>
@@ -93,12 +110,13 @@ namespace Kelp
 		/// Initializes a new instance of the <see cref="QueryString" /> class, and populates it with
 		/// values parsed the specified <paramref name="queryString" />.
 		/// </summary>
-		/// <param name="queryString">The query string that contains the name/value pairs to use.</param>
 		/// <param name="splitChars">The character to use to split the key/value pairs.</param>
-		public QueryString(string queryString, char[] splitChars)
+		/// <param name="queryString">The query string that contains the name/value pairs to use.</param>
+		public QueryString(char[] splitChars, string queryString)
+			: this(splitChars)
 		{
 			if (!string.IsNullOrEmpty(queryString))
-				this.Parse(queryString, splitChars, QueryString.KeyValueSeparator);
+				this.Parse(queryString);
 		}
 
 		/// <summary>
@@ -124,37 +142,6 @@ namespace Kelp
 		/// Parses the specified query string into this instance and returns this instance.
 		/// </summary>
 		/// <param name="queryString">The query string to parse.</param>
-		/// <exception cref="ArgumentNullException"><paramref name="queryString"/> argument is <c>null</c>.</exception>
-		/// <example><c>
-		/// var coll = new <see cref="NameValueCollection"/>();
-		/// coll.ParseQueryString("a=12&amp;c=56&amp;color=red");
-		/// </c></example>
-		/// <returns>The current instance.</returns>
-		public QueryString Parse(string queryString)
-		{
-			return this.Parse(queryString, QueryString.PairSeparators, QueryString.KeyValueSeparator);
-		}
-
-		/// <summary>
-		/// Parses the specified query string into this instance and returns this instance.
-		/// </summary>
-		/// <param name="queryString">The query string to parse.</param>
-		/// <param name="pairSplitChars">The character(s) to use to split the pairs.</param>
-		/// <returns>The current instance.</returns>
-		/// <exception cref="ArgumentNullException"><paramref name="queryString" /> argument is <c>null</c>.</exception>
-		/// <example><c>
-		/// var coll = new <see cref="NameValueCollection" />();
-		/// coll.ParseQueryString("a=12&amp;c=56&amp;color=red");
-		/// </c></example>
-		public QueryString Parse(string queryString, char[] pairSplitChars)
-		{
-			return this.Parse(queryString, pairSplitChars, QueryString.KeyValueSeparator);
-		}
-
-		/// <summary>
-		/// Parses the specified query string into this instance and returns this instance.
-		/// </summary>
-		/// <param name="queryString">The query string to parse.</param>
 		/// <param name="pairSplitChars">The character(s) to use to split the pairs.</param>
 		/// <param name="keyValueSplitChar">The character(s) to use to split keys and values.</param>
 		/// <returns>The current instance.</returns>
@@ -163,24 +150,23 @@ namespace Kelp
 		/// var coll = new <see cref="NameValueCollection" />();
 		/// coll.ParseQueryString("a=12&amp;c=56&amp;color=red");
 		/// </c></example>
-		public QueryString Parse(string queryString, char[] pairSplitChars, char keyValueSplitChar)
+		public QueryString Parse(string queryString, char[] pairSplitChars = null, char? keyValueSplitChar = null)
 		{
-			Contract.Requires<ArgumentNullException>(queryString != null);
-			Contract.Requires<ArgumentNullException>(pairSplitChars != null);
-			Contract.Requires<ArgumentException>(pairSplitChars.Length > 0);
+			char[] pairSplitCharsLocal = pairSplitChars == null || pairSplitChars.Length == 0 ? this.pairSeparators : pairSplitChars;
+			char kvSplitCharLocal = keyValueSplitChar == null ? this.keyValueSeparator : keyValueSplitChar.Value;
 
 			this.Clear();
 
 			if (queryString.IndexOf('?') == 0)
 				queryString = queryString.Substring(1);
 
-			string[] values = queryString.Split(pairSplitChars, StringSplitOptions.RemoveEmptyEntries);
+			string[] values = queryString.Split(pairSplitCharsLocal, StringSplitOptions.RemoveEmptyEntries);
 			foreach (string t in values)
 			{
 				if (t == string.Empty)
 					continue;
 
-				int index = t.IndexOf(keyValueSplitChar);
+				int index = t.IndexOf(kvSplitCharLocal);
 				if (index != -1)
 				{
 					string name = t.Substring(0, index);
