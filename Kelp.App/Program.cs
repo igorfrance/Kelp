@@ -260,7 +260,7 @@ namespace Kelp.App
 
 					if (name == "settings")
 					{
-						this.Settings = new QueryString(value, '
+						this.Settings = new QueryString(value);
 					}
 					else if (name == "target")
 					{
