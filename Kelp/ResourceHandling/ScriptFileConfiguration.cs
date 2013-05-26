@@ -17,6 +17,7 @@ namespace Kelp.ResourceHandling
 {
 	using System;
 	using System.Collections.Generic;
+	using System.Collections.Specialized;
 	using System.Xml;
 
 	using Microsoft.Ajax.Utilities;
@@ -30,17 +31,17 @@ namespace Kelp.ResourceHandling
 
 		private readonly List<string> boolProps = new List<string>
 		{
+			"MinifyCode",
 			"CollapseToLiteral",
 			"EvalLiteralExpressions",
-			"IgnoreConditionalCompilation",
 			"MacSafariQuirks",
 			"ManualRenamesProperties",
-			"MinifyCode",
 			"PreserveFunctionNames",
 			"RemoveFunctionExpressionNames",
 			"RemoveUnneededCode",
 			"StripDebugStatements",
 			"InlineSafeStrings",
+			"StrictMode",
 		};
 
 		private readonly List<string> enumProps = new List<string>
@@ -57,7 +58,7 @@ namespace Kelp.ResourceHandling
 		{
 			this.Settings = new CodeSettings
 			{
-				MinifyCode = true,
+				MinifyCode = false,
 				OutputMode = OutputMode.SingleLine
 			};
 		}
@@ -71,6 +72,17 @@ namespace Kelp.ResourceHandling
 			: this()
 		{
 			this.Parse(configurationElement, typeof(CodeSettings), this.Settings);
+		}
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="ScriptFileConfiguration" /> class,
+		/// using the specified <paramref name="configuration"/> collection.
+		/// </summary>
+		/// <param name="configuration">The collection that contains the configuration settings.</param>
+		public ScriptFileConfiguration(NameValueCollection configuration)
+			: this()
+		{
+			this.Parse(configuration, typeof(CodeSettings), this.Settings);
 		}
 
 		/// <summary>
@@ -94,6 +106,20 @@ namespace Kelp.ResourceHandling
 		protected override List<string> EnumProps
 		{
 			get { return enumProps; }
+		}
+
+		/// <inheritdoc/>
+		public override bool MinificationEnabled
+		{
+			get
+			{
+				return this.Settings.MinifyCode;
+			}
+
+			set
+			{
+				this.Settings.MinifyCode = value;
+			}
 		}
 
 		/// <inheritdoc/>

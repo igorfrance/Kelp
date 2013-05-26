@@ -17,6 +17,7 @@ namespace Kelp.ResourceHandling
 {
 	using System;
 	using System.Collections.Generic;
+	using System.Collections.Specialized;
 	using System.Xml;
 
 	using Microsoft.Ajax.Utilities;
@@ -44,7 +45,7 @@ namespace Kelp.ResourceHandling
 		{
 			this.Settings = new CssSettings
 			{
-				MinifyExpressions = true
+				MinifyExpressions = false
 			};
 		}
 
@@ -57,6 +58,17 @@ namespace Kelp.ResourceHandling
 			: this()
 		{
 			this.Parse(configurationElement, typeof(CssSettings), this.Settings);
+		}
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="CssFileConfiguration" /> class,
+		/// using the specified <paramref name="configuration"/> collection.
+		/// </summary>
+		/// <param name="configuration">The collection that contains the configuration settings.</param>
+		public CssFileConfiguration(NameValueCollection configuration)
+			: this()
+		{
+			this.Parse(configuration, typeof(CssSettings), this.Settings);
 		}
 
 		/// <summary>
@@ -80,6 +92,20 @@ namespace Kelp.ResourceHandling
 		protected override List<string> EnumProps
 		{
 			get { return enumProps; }
+		}
+
+		/// <inheritdoc/>
+		public override bool MinificationEnabled
+		{
+			get
+			{
+				return this.Settings.MinifyExpressions;
+			}
+
+			set
+			{
+				this.Settings.MinifyExpressions = value;
+			}
 		}
 
 		/// <inheritdoc/>
