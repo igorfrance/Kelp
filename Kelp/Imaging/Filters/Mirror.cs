@@ -38,6 +38,7 @@ namespace Kelp.Imaging.Filters
 		}
 
 		[QueryFilterFactory("mh", 1)]
+		[QueryFilterFactory("mirrorh", 1)]
 		internal static IFilter GetMirrorHFilter(string[] param)
 		{
 			return param[0] == "1" ? new MirrorH() : null;
@@ -64,6 +65,7 @@ namespace Kelp.Imaging.Filters
 		}
 
 		[QueryFilterFactory("mv", 1)]
+		[QueryFilterFactory("mirrorv", 1)]
 		internal static IFilter GetMirrorVFilter(string[] param)
 		{
 			return param[0] == "1" ? new MirrorV() : null;

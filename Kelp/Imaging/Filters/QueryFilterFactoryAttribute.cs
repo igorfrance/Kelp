@@ -20,6 +20,7 @@ namespace Kelp.Imaging.Filters
 	/// <summary>
 	/// Indicates that the decorated method creates an <see cref="IFilter"/> instance.
 	/// </summary>
+	[AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
 	public class QueryFilterFactoryAttribute : Attribute
 	{
 		/// <summary>

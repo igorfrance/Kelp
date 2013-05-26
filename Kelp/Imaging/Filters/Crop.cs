@@ -51,6 +51,7 @@ namespace Kelp.Imaging.Filters
 		}
 
 		[QueryFilterFactory("cp", 4)]
+		[QueryFilterFactory("crop", 1)]
 		internal static IFilter GetCropFilter(string[] param)
 		{
 			int x, y, w, h;

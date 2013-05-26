@@ -59,6 +59,7 @@ namespace Kelp.Imaging.Filters
 		}
 
 		[QueryFilterFactory("gm", 1)]
+		[QueryFilterFactory("gamma", 1)]
 		internal static IFilter GetGammaFilter(string[] param)
 		{
 			int amount;
