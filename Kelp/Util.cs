@@ -40,7 +40,7 @@ namespace Kelp
 		/// <summary>
 		/// Gets the physical path of the currently executing assembly in the .net framework temp directory.
 		/// </summary>
-		public static string ExecutingAssemblyLocation
+		public static string ExecutingAssemblyName
 		{
 			get
 			{
@@ -55,7 +55,7 @@ namespace Kelp
 		/// Gets the physical path of the code currently executing assembly in the directory from which it
 		/// was copied to the .net framework temp directory.
 		/// </summary>
-		public static string ExecutingAssemblyCodeBase
+		public static string ExecutingAssemblyCodeBaseName
 		{
 			get
 			{
@@ -64,6 +64,25 @@ namespace Kelp
 						.Replace("file:///", string.Empty)
 						.Replace("/", "\\");
 			}
+		}
+
+		/// <summary>
+		/// Returns an absolute path for the specified <paramref name="relativePath"/>.
+		/// </summary>
+		/// <param name="relativePath">The relative path to convert.</param>
+		/// <returns>An absolute path of the specified <paramref name="relativePath"/>.</returns>
+		public static string MapPath(string relativePath)
+		{
+			var currentDirectory = Path.GetDirectoryName(ExecutingAssemblyName);
+
+			var path = relativePath
+				.Replace("~", currentDirectory)
+				.Replace("/", "\\");
+
+			if (!Path.IsPathRooted(path))
+				path = Path.Combine(currentDirectory, path);
+
+			return path;
 		}
 
 		/// <summary>
@@ -98,7 +117,7 @@ namespace Kelp
 		{
 			var result = new List<Assembly> { source };
 			var files = Directory.GetFiles(
-				Path.GetDirectoryName(Util.ExecutingAssemblyLocation), "*.dll", SearchOption.AllDirectories);
+				Path.GetDirectoryName(Util.ExecutingAssemblyName), "*.dll", SearchOption.AllDirectories);
 
 			result.AddRange(files
 				.Select(Assembly.LoadFrom)

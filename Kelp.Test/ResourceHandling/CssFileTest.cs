@@ -31,7 +31,7 @@ namespace Kelp.Test.ResourceHandling
 
 		private Establish ctx = () =>
 		{
-			var tempDirectory = Utilities.MapPath(Configuration.Current.TemporaryDirectory);
+			var tempDirectory = Util.MapPath(Configuration.Current.TemporaryDirectory);
 			if (Directory.Exists(tempDirectory))
 				Directory.Delete(tempDirectory, true);
 
@@ -55,7 +55,7 @@ namespace Kelp.Test.ResourceHandling
 
 		private Establish ctx = () =>
 		{
-			var tempDirectory = Utilities.MapPath(Configuration.Current.TemporaryDirectory);
+			var tempDirectory = Util.MapPath(Configuration.Current.TemporaryDirectory);
 			if (Directory.Exists(tempDirectory))
 				Directory.Delete(tempDirectory, true);
 

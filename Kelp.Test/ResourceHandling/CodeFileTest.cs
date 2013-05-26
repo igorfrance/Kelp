@@ -8,7 +8,7 @@
 		static CodeFileTest()
 		{
 			Configuration.Current.TemporaryDirectory =
-				Utilities.MapPath(Configuration.Current.TemporaryDirectory);
+				Util.MapPath(Configuration.Current.TemporaryDirectory);
 		}
 	}
 }
