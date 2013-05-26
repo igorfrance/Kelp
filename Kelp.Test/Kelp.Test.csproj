@@ -129,6 +129,7 @@
     </Content>
     <Content Include="TestData\Images\illustration4.jpg" />
     <Content Include="TestData\Scripts\compression1.js" />
+    <Content Include="TestData\Scripts\simple2.js" />
     <Content Include="TestData\Scripts\multiline-string2.js" />
     <Content Include="TestData\Scripts\gallery.js" />
     <Content Include="TestData\Scripts\multiline-string1.js" />

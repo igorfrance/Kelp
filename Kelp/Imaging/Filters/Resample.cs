@@ -263,6 +263,7 @@ namespace Kelp.Imaging.Filters
 		}
 
 		[QueryFilterFactory("rs", 1)]
+		[QueryFilterFactory("resize", 1)]
 		internal static IFilter GetResampleFilter(string[] param)
 		{
 			int width, height = 0;

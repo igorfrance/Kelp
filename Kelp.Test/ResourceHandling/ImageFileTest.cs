@@ -26,8 +26,16 @@ namespace Kelp.Test.ResourceHandling
 
 	using Machine.Specifications;
 
+	public abstract class ImageFileTest
+	{
+		~ImageFileTest()
+		{
+			Utilities.ClearTemporaryDirectory();
+		}
+	}
+
 	[Subject(typeof(ImageFile)), Tags(Categories.ResourceHandling)]
-	public class When_opening_a_file_with_many_querystring_parameters
+	public class When_opening_a_file_with_many_querystring_parameters : ImageFileTest
 	{
 		private static ImageFile subject;
 		private static int byteCount;

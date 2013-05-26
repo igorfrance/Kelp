@@ -69,12 +69,14 @@ namespace Kelp.Imaging.Filters
 		}
 
 		[QueryFilterFactory("sp", 1)]
+		[QueryFilterFactory("sharpen", 1)]
 		internal static IFilter GetSharpenFilter(string[] param)
 		{
 			return param[0] == "1" ? new GaussianSharpen(0.9, 1) : null;
 		}
 
 		[QueryFilterFactory("sx", 1)]
+		[QueryFilterFactory("sharpenx", 1)]
 		internal static IFilter GetSharpenExFilter(string[] param)
 		{
 			int amount;

@@ -61,6 +61,7 @@ namespace Kelp.Imaging.Filters
 		}
 
 		[QueryFilterFactory("ct", 1)]
+		[QueryFilterFactory("contrast", 1)]
 		internal static IFilter GetContrastFilter(string[] param)
 		{
 			int amount;

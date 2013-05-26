@@ -31,6 +31,7 @@ namespace Kelp.Imaging.Filters
 		}
 
 		[QueryFilterFactory("gs", 1)]
+		[QueryFilterFactory("grayscale", 1)]
 		internal static IFilter GetGrayscaleFilter(string[] param)
 		{
 			return param[0] == "1" ? new GrayscaleMatrix() : null;

@@ -42,6 +42,7 @@ namespace Kelp.Imaging.Filters
 		}
 
 		[QueryFilterFactory("se", 1)]
+		[QueryFilterFactory("sepia", 1)]
 		internal static IFilter GetSepiaFilter(string[] param)
 		{
 			return param[0] == "1" ? new SepiaMatrix() : null;

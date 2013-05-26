@@ -59,6 +59,7 @@ namespace Kelp.Imaging.Filters
 		}
 
 		[QueryFilterFactory("bt", 1)]
+		[QueryFilterFactory("brightness", 1)]
 		internal static IFilter GetBrigthnessFilter(string[] param)
 		{
 			int amount;

@@ -10,3 +10,4 @@ log/
 *.favdoc
 *.tf1
 *.tfb
+/Kelp.sln.GhostDoc.xml

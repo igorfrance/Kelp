@@ -1,81 +1,13 @@
 <?xml version="1.0"?>
 <project name="Sage" xmlns="http://nant.sf.net/release/0.91-alpha2/nant.xsd" default="default">
 	
-	<property name="outputPath" value="releases/latest"/>
-	<property name="targetSite" value="${outputPath}/examples/documentation"/>
-	<property name="solutionFile" value="src/Sage.sln"/>
+	<property name="solutionFile" value="Kelp.sln"/>
 	<property name="buildConfiguration" value="Debug"/>
-	<property name="kelpBuildPath" value="src/kelp/bin/${buildConfiguration}"/>
-	<property name="sageBuildPath" value="src/sage/bin/${buildConfiguration}"/>
-	<property name="extensionBuilder" value="src/sage.build/bin/${buildConfiguration}/sage.build.exe"/>
-	<property name="exampleSitePath" value="src/examples/documentation"/>
 	
 	<target name="default">
-		<call target="clean"/>
-		<call target="build-solution"/>
-		<call target="build-extensions"/>
-	</target>
-
-	<target name="clean">
-		<delete dir="${outputPath}"/>
-	</target>
-	
-	<target name="build-solution">
 		<msbuild project="${solutionFile}" verbosity="Normal">
 			<property name="Configuration" value="${buildConfiguration}"/>
 		</msbuild>
-		
-		<copy todir="${outputPath}/kelp">
-			<fileset basedir="${kelpBuildPath}">
-				<include name="*.dll"/>
-				<include name="*.xml"/>
-				<include name="*.pdb"/>
-			</fileset>
-		</copy>
-		
-		<copy todir="${outputPath}/sage">
-			<fileset basedir="${sageBuildPath}">
-				<include name="*.dll"/>
-				<include name="*.xml"/>
-				<include name="*.pdb"/>
-			</fileset>
-		</copy>
-		
-		<copy todir="${outputPath}/examples/documentation">
-			<fileset basedir="${exampleSitePath}">
-				<include name="*/**"/>
-				<exclude name="tmp/**"/>
-				<exclude name="log/**"/>
-				<exclude name="extensions/**"/>
-			</fileset>
-		</copy>
-		<xmlpoke file="${targetSite}/bin/Project.config" 
-						 xpath="/p:project/@debugMode" 
-						 value="false">
-			<namespaces>
-				<namespace prefix="p" uri="http://www.cycle99.com/schemas/sage/configuration/project.xsd"/>
-			</namespaces>
-		</xmlpoke>
-		<xmlpoke file="${targetSite}/web.config"
-						 xpath="/configuration/resourceHandling/script/@Enabled"
-						 value="true"/>
-		<xmlpoke file="${targetSite}/web.config"
-						 xpath="/configuration/resourceHandling/css/@Enabled"
-						 value="true"/>
-		<xmlpoke file="${targetSite}/web.config"
-						 xpath="/configuration/system.web/compilation/@debug"
-						 value="false"/>
-	</target>
-
-	<target name="build-extensions">
-		<exec program="${extensionBuilder}" basedir=".">
-			<arg value="extension"/>
-			<arg value="-source:&quot;src/extensions/DevTools&quot;"/>
-			<arg value="-target:&quot;${outputPath}/extensions/sage.devtools.zip&quot;"/>
-		</exec>
-		<copy 
-			file="releases/latest/extensions/sage.devtools.zip" 
-			todir="releases/latest/examples/documentation/extensions"/>
 	</target>
 	
 </project>

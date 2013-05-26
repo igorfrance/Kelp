@@ -45,6 +45,7 @@ namespace Kelp.ResourceHandling
 		private static readonly string[] extensions = new[] { "gif", "jpg", "jpeg", "bmp", "png" };
 		private readonly string absolutePath;
 		private byte[] imageBytes;
+		private MemoryStream stream;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="ImageFile"/> class.
@@ -154,6 +155,17 @@ namespace Kelp.ResourceHandling
 		public bool UseCache { get; set; }
 
 		/// <summary>
+		/// Gets the stream of bytes from this image.
+		/// </summary>
+		public Stream Stream
+		{
+			get
+			{
+				return stream ?? new MemoryStream(this.Bytes);
+			}
+		}
+
+		/// <summary>
 		/// Gets the codec info to use when saving this image file instance.
 		/// </summary>
 		protected abstract ImageCodecInfo CodecInfo { get; }
@@ -215,6 +227,8 @@ namespace Kelp.ResourceHandling
 		{
 			bool useCache = false;
 			byte[] imageData = null;
+			stream = null;
+
 			DateTime dateSource = Util.GetDateLastModified(absolutePath);
 
 			if (this.UseCache && File.Exists(CachePath) && Util.GetDateLastModified(CachePath) > dateSource)

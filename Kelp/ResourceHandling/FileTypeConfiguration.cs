@@ -17,6 +17,7 @@ namespace Kelp.ResourceHandling
 {
 	using System;
 	using System.Collections.Generic;
+	using System.Collections.Specialized;
 	using System.Linq;
 	using System.Reflection;
 	using System.Xml;
@@ -36,7 +37,7 @@ namespace Kelp.ResourceHandling
 		/// Gets or sets a value indicating whether minification is enabled for this file type.
 		/// </summary>
 		/// <value><c>true</c> if minification is enabled; otherwise, <c>false</c>.</value>
-		public virtual bool MinificationEnabled { get; set; }
+		public abstract bool MinificationEnabled { get; set; }
 
 		/// <summary>
 		/// Gets or sets the temporary directory in which to save the processed files.
@@ -70,47 +71,60 @@ namespace Kelp.ResourceHandling
 		protected abstract List<string> EnumProps { get; }
 
 		/// <summary>
-		/// Parses the specified configuration element.
+		/// Parses the specified <paramref name="configurationElement"/>.
 		/// </summary>
-		/// <param name="configurationElement">The configuration element to parse.</param>
+		/// <param name="configurationElement">The element that contaisn the configuration values.</param>
 		/// <param name="self">The (derived) type of the <paramref name="target"/>.</param>
 		/// <param name="target">The target instance to parse the configuration into.</param>
 		protected void Parse(XmlElement configurationElement, Type self, object target)
 		{
-			if (configurationElement == null)
+			NameValueCollection values = new NameValueCollection();
+			foreach (XmlAttribute attrib in configurationElement.Attributes)
+				values.Add(attrib.LocalName, attrib.InnerText);
+
+			Parse(values, self, target);
+		}
+
+		/// <summary>
+		/// Parses the specified name value collection of configuration values.
+		/// </summary>
+		/// <param name="values">The configuration values.</param>
+		/// <param name="self">The (derived) type of the <paramref name="target"/>.</param>
+		/// <param name="target">The target instance to parse the configuration into.</param>
+		protected void Parse(NameValueCollection values, Type self, object target)
+		{
+			if (values == null)
 				return;
 
-			this.MinificationEnabled = configurationElement.GetAttribute("Enabled") == "true";
-			foreach (XmlAttribute attrib in configurationElement.Attributes)
+			foreach (string name in values.Keys)
 			{
-				string attribName = attrib.LocalName;
-				string attribValue = attrib.InnerText;
-				PropertyInfo property = self.GetProperty(attribName, Flags);
+				string value = values[name];
+				PropertyInfo property = self.GetProperty(name, Flags);
 				if (property == null || !property.CanWrite)
 					continue;
 
 				byte byteValue;
-				if (this.ByteProps.Contains(attribName, StringComparer.OrdinalIgnoreCase) && byte.TryParse(attribValue, out byteValue))
+				if (this.ByteProps.Contains(name, StringComparer.OrdinalIgnoreCase) && byte.TryParse(value, out byteValue))
 				{
 					property.SetValue(target, byteValue, null);
 				}
 
 				bool boolValue;
-				if (this.BoolProps.Contains(attribName, StringComparer.OrdinalIgnoreCase) && bool.TryParse(attribValue, out boolValue))
+				if (this.BoolProps.Contains(name, StringComparer.OrdinalIgnoreCase) && bool.TryParse(value, out boolValue))
 				{
 					property.SetValue(target, boolValue, null);
 				}
 
-				if (this.EnumProps.Contains(attribName, StringComparer.OrdinalIgnoreCase))
+				if (this.EnumProps.Contains(name, StringComparer.OrdinalIgnoreCase))
 				{
 					try
 					{
-						property.SetValue(target, Enum.Parse(property.PropertyType, attribValue), null);
+						property.SetValue(target, Enum.Parse(property.PropertyType, value), null);
 					}
 					catch (Exception ex)
 					{
 						log.ErrorFormat("Could not set the enum value '{0}' of property '{1} ({2}): {3}'",
-							attribValue, attribName, property.PropertyType.Name, ex.Message);
+							value, name, property.PropertyType.Name, ex.Message);
 					}
 				}
 			}
@@ -124,7 +138,7 @@ namespace Kelp.ResourceHandling
 		/// <returns>The string representation of the <paramref name="sourceObject"/>.</returns>
 		protected string Serialize(Type t, object sourceObject)
 		{
-			List<string> result = new List<string> { "Enabled=" + this.MinificationEnabled };
+			List<string> result = new List<string>();
 			List<string> missing = new List<string>();
 			foreach (string prop in BoolProps)
 			{

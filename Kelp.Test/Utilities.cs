@@ -18,6 +18,7 @@ namespace Kelp.Test
 	using System;
 	using System.IO;
 	using System.Reflection;
+	using System.Threading;
 
 	using Kelp.ResourceHandling;
 
@@ -149,16 +150,9 @@ namespace Kelp.Test
 			return expanded;
 		}
 
-		internal static string MapPath(string relativePath)
-		{
-			return relativePath
-				.Replace("~", ApplicationPath)
-				.Replace("/", "\\");
-		}
-
 		internal static void ClearTemporaryDirectory()
 		{
-			var tempDirectory = Utilities.MapPath(Configuration.Current.TemporaryDirectory);
+			var tempDirectory = Util.MapPath(Configuration.Current.TemporaryDirectory);
 			if (Directory.Exists(tempDirectory))
 				Directory.Delete(tempDirectory, true);
 		}
