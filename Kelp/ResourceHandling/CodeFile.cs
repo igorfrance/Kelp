@@ -46,7 +46,7 @@ namespace Kelp.ResourceHandling
 		/// <summary>
 		/// The file's fully processed source code.
 		/// </summary>
-		protected string content = string.Empty;
+		protected StringBuilder content = new StringBuilder();
 
 		/// <summary>
 		/// The file's raw source code.
@@ -64,6 +64,7 @@ namespace Kelp.ResourceHandling
 		private readonly string relativePath;
 		private string absolutePath;
 		private bool initialized;
+		private bool initializing;
 		private bool loaded;
 		private bool isFromCache;
 		private int retryCount;
@@ -203,7 +204,7 @@ namespace Kelp.ResourceHandling
 			get
 			{
 				this.Initialize();
-				return content;
+				return content.ToString();
 			}
 		}
 
@@ -355,7 +356,9 @@ namespace Kelp.ResourceHandling
 			Contract.Requires<ArgumentNullException>(!string.IsNullOrEmpty(relativePath));
 
 			CodeFile result = Create(absolutePath, relativePath, (CodeFile) null);
-			result.TemporaryDirectory = temporaryDirectory;
+			if (temporaryDirectory != null)
+				result.TemporaryDirectory = temporaryDirectory;
+
 			return result;
 		}
 
@@ -427,6 +430,55 @@ namespace Kelp.ResourceHandling
 		public override string ToString()
 		{
 			return this.RelativePath;
+		}
+
+		/// <summary>
+		/// Adds a file to this code file.
+		/// </summary>
+		/// <param name="path">The path of the file to add.</param>
+		/// <returns>A value indicating whether the file exists.</returns>
+		public bool AddFile(string path)
+		{
+			this.Initialize();
+
+			var includePath = ExpandPath(Regex.Replace(path, @"\?.*$", string.Empty));
+			if (File.Exists(includePath))
+			{
+				if (includePath.Equals(this.AbsolutePath, StringComparison.InvariantCultureIgnoreCase))
+				{
+					log.FatalFormat("The script cannot include itself. The script is: {0}({1})", path, includePath);
+					throw new InvalidOperationException("The script cannot include itself.");
+				}
+
+				if (IsPathInIncludeChain(includePath))
+				{
+					log.FatalFormat("Including the referenced path would cause recursion due to it being present at a level higher above. The script is: {0}({1})", path, includePath);
+					throw new InvalidOperationException("Including the referenced path would cause recursion due to it being present at a level higher above.");
+				}
+
+				var inner = CodeFile.Create(includePath, path, this);
+				this.content.AppendLine(inner.Content);
+
+				foreach (var key in inner.includes.Keys)
+				{
+					if (inner.includes[key] == null)
+						continue;
+
+					this.AddInclude(key, inner.includes[key]);
+				}
+
+				this.AddInclude(includePath, inner);
+
+				foreach (var absPath in inner.References.Keys)
+				{
+					this.AddReference(absPath, inner.References[absPath]);
+				}
+
+				return true;
+			}
+
+			this.AddInclude(includePath, null);
+			return false;
 		}
 
 		internal static bool IsFileExtensionSupported(string extension)
@@ -504,9 +556,10 @@ namespace Kelp.ResourceHandling
 
 		private void InitializeActual()
 		{
-			if (this.initialized)
+			if (this.initialized || this.initializing)
 				return;
 
+			this.initializing = true;
 			this.Load();
 
 			if (File.Exists(this.CacheName))
@@ -551,7 +604,7 @@ namespace Kelp.ResourceHandling
 						persistContent.AppendLine(string.Format("/*# Reference: {0} | {1} */", includePath, this.references[includePath]));
 
 					persistContent.AppendLine();
-					persistContent.AppendLine(this.content);
+					persistContent.Append(this.content);
 
 					File.WriteAllText(this.CacheName, persistContent.ToString(), Encoding.UTF8);
 					log.DebugFormat("Saved the temporary contents of '{0}' to '{1}'.", AbsolutePath, this.CacheName);
@@ -563,6 +616,7 @@ namespace Kelp.ResourceHandling
 			}
 
 			this.initialized = true;
+			this.initializing = false;
 		}
 
 		/// <summary>
@@ -589,7 +643,7 @@ namespace Kelp.ResourceHandling
 		{
 			Contract.Requires<ArgumentNullException>(sourceCode != null);
 
-			StringBuilder contents = new StringBuilder();
+			this.content = new StringBuilder();
 			string[] lines = sourceCode.Replace("\r", string.Empty).Split(new[] { '\n' });
 
 			foreach (string line in lines)
@@ -614,46 +668,9 @@ namespace Kelp.ResourceHandling
 							break;
 
 						case "include":
-							var includePath = ExpandPath(Regex.Replace(value, @"\?.*$", string.Empty));
-							if (File.Exists(includePath))
-							{
-								if (includePath.Equals(this.AbsolutePath, StringComparison.InvariantCultureIgnoreCase))
-								{
-									log.FatalFormat("The script cannot include itself. The script is: {0}({1})", value, includePath);
-									throw new InvalidOperationException("The script cannot include itself.");
-								}
-
-								if (IsPathInIncludeChain(includePath))
-								{
-									log.FatalFormat("Including the referenced path would cause recursion due to it being present at a level higher above. The script is: {0}({1})", value, includePath);
-									throw new InvalidOperationException("Including the referenced path would cause recursion due to it being present at a level higher above.");
-								}
-
-								var inner = CodeFile.Create(includePath, value, this);
-								contents.AppendLine(inner.Content);
-
-								foreach (var key in inner.includes.Keys)
-								{
-									if (inner.includes[key] == null)
-										continue;
-
-									this.AddInclude(key, inner.includes[key]);
-								}
-
-								this.AddInclude(includePath, inner);
-
-								foreach (var absPath in inner.References.Keys)
-								{
-									this.AddReference(absPath, inner.References[absPath]);
-								}
-							}
-							else
-							{
-								log.ErrorFormat("The include file specified with '{0}' and resolved to '{1}' doesn't exist", value, includePath);
-								contents.AppendLine(line + "/* File not found */");
-								this.AddInclude(includePath, null);
-							}
-
+							var exists = this.AddFile(value);
+							if (!exists)
+								content.AppendLine(line + "/* File not found */");
 							break;
 
 						default:
@@ -662,15 +679,14 @@ namespace Kelp.ResourceHandling
 					}
 				}
 				else
-					contents.AppendLine(line);
+					content.AppendLine(line);
 			}
 
-			this.content = contents.ToString();
 			this.AddReference(this.AbsolutePath, this.RelativePath);
-			if (this.MinificationEnabled && minify)
+			if (this.Configuration.MinificationEnabled && minify)
 			{
 				log.DebugFormat("Minification of '{0}' took {1}ms", this.AbsolutePath, 
-					sw.TimeMilliseconds(() => this.content = this.Minify(this.content)));
+					sw.TimeMilliseconds(() => this.content = new StringBuilder(this.Minify(this.content.ToString()))));
 			}
 		}
 

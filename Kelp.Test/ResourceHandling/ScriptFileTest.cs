@@ -206,4 +206,28 @@ namespace Kelp.Test.ResourceHandling
 
 		private It Should_not_be_null_or_throw_an_error = () => contents.ShouldNotBeNull();
 	}
+
+	[Subject(typeof(CodeFile)), Tags(Categories.ResourceHandling)]
+	public class When_appending_file_using_its_api : CodeFileTest
+	{
+		private static string contents;
+		private static ScriptFile proc;
+		private const string ScriptName = "empty.js";
+		private static readonly string scriptPath = Utilities.GetScriptPath(ScriptName);
+
+		private Establish ctx = () =>
+		{
+			Utilities.ClearTemporaryDirectory();
+			proc = new ScriptFile(scriptPath, ScriptName);
+			proc.DebugModeOn = true;
+			proc.AddFile(Utilities.GetScriptPath("simple1.js"));
+			proc.AddFile(Utilities.GetScriptPath("simple2.js"));
+		};
+
+		private It Should_contain_content_of_included_files = () =>
+		{
+			proc.Content.ShouldContain("var x");
+			proc.Content.ShouldContain("Math.max");
+		};
+	}
 }
