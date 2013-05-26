@@ -16,6 +16,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		kelp.build = kelp.build
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kelp.App", "Kelp.App\Kelp.App.csproj", "{2CEA4138-7E4E-442E-A50C-32F1FAA0E0CF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,6 +32,10 @@ Global
 		{500E8A15-7A75-4F62-BFFA-49784CC4E851}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{500E8A15-7A75-4F62-BFFA-49784CC4E851}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{500E8A15-7A75-4F62-BFFA-49784CC4E851}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2CEA4138-7E4E-442E-A50C-32F1FAA0E0CF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2CEA4138-7E4E-442E-A50C-32F1FAA0E0CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2CEA4138-7E4E-442E-A50C-32F1FAA0E0CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2CEA4138-7E4E-442E-A50C-32F1FAA0E0CF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
