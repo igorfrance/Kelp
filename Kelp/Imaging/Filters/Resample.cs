@@ -16,9 +16,12 @@
 namespace Kelp.Imaging.Filters
 {
 	using System;
+	using System.Collections.Generic;
 	using System.Diagnostics.Contracts;
 	using System.Drawing;
 	using System.Drawing.Drawing2D;
+
+	using Kelp.Extensions;
 
 	/// <summary>
 	/// Defines the different fit types
@@ -274,22 +277,23 @@ namespace Kelp.Imaging.Filters
 
 			int.TryParse(param[0], out width);
 
+			string[] b01 = new []{ "0", "1" };
+
 			if (param.Length > 1)
 				int.TryParse(param[1], out height);
 
-			if (param.Length > 2)
-				preserveRatio = param[2] != "0";
+			if (param.Length > 2 && param[2].ContainsAnyOf(b01))
+				preserveRatio = param[2] == "1";
 
-			if (param.Length > 3)
-				dontEnlarge = param[3] != "0";
+			if (param.Length > 3 && param[3].ContainsAnyOf(b01))
+				dontEnlarge = param[3] == "1";
 
-			if (param.Length > 4)
+			if (param.Length > 4 && param[4] != string.Empty)
 			{
-				interpolation = (InterpolationMode)
-					Enum.Parse(typeof(InterpolationMode), param[4]);
+				Enum.TryParse(param[4], out interpolation);
 			}
 
-			if (param.Length > 5 && param[5] == "min")
+			if (param.Length > 5 && param[5].ContainsAnyOf(b01))
 			{
 				fitType = ResampleFitType.ToMinimums;
 			}
