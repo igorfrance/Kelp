@@ -113,8 +113,9 @@
     <Compile Include="HttpMock.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ResourceHandling\CodeFileTest.cs" />
-    <Compile Include="ResourceHandling\CssFileTest.cs" />
-    <Compile Include="ResourceHandling\ImageFileTest.cs" />
+    <Compile Include="ResourceHandling\CssFileTests.cs" />
+    <Compile Include="ResourceHandling\ImageFileTests.cs" />
+    <Compile Include="ResourceHandling\LessCssFileTests.cs" />
     <Compile Include="ResourceHandling\ScriptFileTest.cs" />
     <Compile Include="Utilities.cs" />
     <Compile Include="UtilTests.cs" />

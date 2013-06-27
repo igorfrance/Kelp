@@ -140,6 +140,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(SolutionDir).nuget\packages\AjaxMin.4.91.4875.26882\lib\net40\AjaxMin.dll</HintPath>
     </Reference>
+    <Reference Include="dotless.Core">
+      <HintPath>..\..\.nuget\packages\dotless.1.3.1.0\lib\dotless.Core.dll</HintPath>
+    </Reference>
     <Reference Include="log4net">
       <HintPath>$(SolutionDir).nuget\packages\log4net.2.0.0\lib\net40-full\log4net.dll</HintPath>
     </Reference>
@@ -166,6 +169,7 @@
     <Compile Include="Extensions\XmlNamespaceManagerExtensions.cs" />
     <Compile Include="Imaging\Filters\QueryFilterFactoryAttribute.cs" />
     <Compile Include="ReadOnlyDictionary.cs" />
+    <Compile Include="ResourceHandling\CssLessFile.cs" />
     <Compile Include="SyntaxHighlighting\XmlLanguageDefinition.cs" />
     <Compile Include="SyntaxHighlighting\Delimiters.cs" />
     <Compile Include="Util.cs" />
@@ -257,6 +261,7 @@
       <Install>true</Install>
     </BootstrapperPackage>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>

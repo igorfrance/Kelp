@@ -30,6 +30,16 @@ namespace Kelp.ResourceHandling
 		private static readonly ILog log = LogManager.GetLogger(typeof(ScriptFile));
 
 		/// <summary>
+		/// Initializes a new instance of the <see cref="ScriptFile"/> class.
+		/// </summary>
+		public ScriptFile()
+			: base(ResourceHandling.Configuration.Current.Script)
+		{
+			this.ContentType = "text/javascript";
+			this.ResourceType = ResourceType.Script;
+		}
+
+		/// <summary>
 		/// Initializes a new instance of the <see cref="ScriptFile" /> class, using the specified absolute and 
 		/// relative paths, and the specified <paramref name="configuration"/>.
 		/// </summary>
@@ -37,7 +47,7 @@ namespace Kelp.ResourceHandling
 		/// <param name="relativePath">The relative path of the file to load.</param>
 		/// <param name="configuration">The processing configuration for this file.</param>
 		public ScriptFile(string absolutePath, string relativePath, FileTypeConfiguration configuration)
-			: base(absolutePath, relativePath, configuration)
+			: base(configuration)
 		{
 			this.ContentType = "text/javascript";
 		}

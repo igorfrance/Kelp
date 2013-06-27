@@ -30,6 +30,16 @@ namespace Kelp.ResourceHandling
 			new Regex(@"(url\s*\((?:""|')?)(.*?)((?:""|')?\))", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
 		/// <summary>
+		/// Initializes a new instance of the <see cref="CssFile"/> class.
+		/// </summary>
+		public CssFile()
+			: base(ResourceHandling.Configuration.Current.Css)
+		{
+			this.ContentType = "text/css";
+			this.ResourceType = ResourceType.Css;
+		}
+
+		/// <summary>
 		/// Initializes a new instance of the <see cref="CssFile" /> class, using the specified absolute and relative paths,
 		/// and the specified <paramref name="configuration"/>.
 		/// </summary>

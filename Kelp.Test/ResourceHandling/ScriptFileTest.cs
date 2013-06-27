@@ -59,14 +59,14 @@ namespace Kelp.Test.ResourceHandling
 			keys.ElementAt(2).ShouldContain("include2");
 			keys.ElementAt(3).ShouldContain("script1");
 
-			CreateInstance().IsFromCache.ShouldBeTrue();
+			CreateInstance().PreviouslyCached.ShouldBeTrue();
 
 			string scriptPath = Utilities.GetScriptPath("include2.js");
 			File.SetLastWriteTime(scriptPath, DateTime.Now);
 			Thread.Sleep(500);
 
 			CodeFile other = CreateInstance();
-			other.IsFromCache.ShouldBeFalse();
+			other.PreviouslyCached.ShouldBeFalse();
 
 			IEnumerable<string> keys2 = other.References.Keys;
 			keys2.ElementAt(0).ShouldContain("include1");
@@ -210,7 +210,6 @@ namespace Kelp.Test.ResourceHandling
 	[Subject(typeof(CodeFile)), Tags(Categories.ResourceHandling)]
 	public class When_appending_file_using_its_api : CodeFileTest
 	{
-		private static string contents;
 		private static ScriptFile proc;
 		private const string ScriptName = "empty.js";
 		private static readonly string scriptPath = Utilities.GetScriptPath(ScriptName);
@@ -220,8 +219,8 @@ namespace Kelp.Test.ResourceHandling
 			Utilities.ClearTemporaryDirectory();
 			proc = new ScriptFile(scriptPath, ScriptName);
 			proc.DebugModeOn = true;
-			proc.AddFile(Utilities.GetScriptPath("simple1.js"));
-			proc.AddFile(Utilities.GetScriptPath("simple2.js"));
+			proc.AddContentFromFile(Utilities.GetScriptPath("simple1.js"));
+			proc.AddContentFromFile(Utilities.GetScriptPath("simple2.js"));
 		};
 
 		private It Should_contain_content_of_included_files = () =>
