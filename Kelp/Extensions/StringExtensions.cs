@@ -26,6 +26,29 @@ namespace Kelp.Extensions
 	public static class StringExtensions
 	{
 		/// <summary>
+		/// Returns a value indicating whether the specified <paramref name="value"/> occurs within this string.
+		/// </summary>
+		/// <param name="subject">The string being extended.</param>
+		/// <param name="value">The value to look for.</param>
+		/// <param name="caseSensitive">If true, the check is being performed case-insensitive.</param>
+		/// <returns><c>true</c> if the <paramref name="value"/> parameter occurs within this string, or if value is 
+		/// the empty string (""); otherwise, <c>false</c>. 
+		/// </returns>
+		public static bool Contains(this string subject, string value, bool caseSensitive)
+		{
+			if (subject == null || value == null)
+				return false;
+
+			if (value == string.Empty)
+				return true;
+
+			if (caseSensitive)
+				return subject.ToLower().Contains(value.ToLower());
+
+			return subject.Contains(value);
+		}
+
+		/// <summary>
 		/// Returns <c>true</c> if the string contains any one of the supplied values.
 		/// </summary>
 		/// <param name="subject">The string subject being tested.</param>
