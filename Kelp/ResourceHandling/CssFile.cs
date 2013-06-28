@@ -17,15 +17,24 @@ namespace Kelp.ResourceHandling
 {
 	using System;
 	using System.Collections.Generic;
+	using System.Diagnostics;
+	using System.Text;
 	using System.Text.RegularExpressions;
 
+	using Kelp.Extensions;
+
 	using Microsoft.Ajax.Utilities;
+
+	using log4net;
 
 	/// <summary>
 	/// Implements a CSS file merger/processor.
 	/// </summary>
+	[ResourceFile(ResourceType.Css, "text/css", "css")]
 	public class CssFile : CodeFile
 	{
+		private static readonly ILog log = LogManager.GetLogger(typeof(CssFile).FullName);
+		private readonly Stopwatch sw = new Stopwatch();
 		private static readonly Regex rxpReferencePath =
 			new Regex(@"(url\s*\((?:""|')?)(.*?)((?:""|')?\))", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
@@ -40,30 +49,11 @@ namespace Kelp.ResourceHandling
 		}
 
 		/// <summary>
-		/// Initializes a new instance of the <see cref="CssFile" /> class, using the specified absolute and relative paths,
-		/// and the specified <paramref name="configuration"/>.
+		/// Removes all comments and white-space and optimizes the source code for minimum size.
 		/// </summary>
-		/// <param name="absolutePath">The path of the file to load.</param>
-		/// <param name="relativePath">The relative path of the file to load.</param>
-		/// <param name="configuration">The processing configuration for this file.</param>
-		public CssFile(string absolutePath, string relativePath, FileTypeConfiguration configuration)
-			: base(absolutePath, relativePath, configuration)
-		{
-			this.ContentType = "text/css";
-		}
-
-		/// <summary>
-		/// Initializes a new instance of the <see cref="CssFile" /> class, using the specified absolute and relative paths.
-		/// </summary>
-		/// <param name="absolutePath">The path of the file to load.</param>
-		/// <param name="relativePath">The relative path of the file to load.</param>
-		public CssFile(string absolutePath, string relativePath)
-			: this(absolutePath, relativePath, ResourceHandling.Configuration.Current.Css)
-		{
-		}
-
-		/// <inheritdoc/>
-		public override string Minify(string sourceCode)
+		/// <param name="sourceCode">The source code.</param>
+		/// <returns>The minified source code.</returns>
+		public string Minify(string sourceCode)
 		{
 			Minifier min = new Minifier();
 			CssFileConfiguration cssConfiguration = (CssFileConfiguration) this.Configuration;
@@ -71,10 +61,21 @@ namespace Kelp.ResourceHandling
 		}
 
 		/// <inheritdoc/>
-		protected override void Load()
+		protected override string PreProcess(string sourceCode, string relativePath)
 		{
-			base.Load();
-			this.FixRelativePaths();
+			return this.FixRelativePaths(sourceCode, relativePath);
+		}
+
+		/// <inheritdoc/>
+		protected override string PostProcess(string sourceCode)
+		{
+			if (this.Configuration.MinificationEnabled)
+			{
+				log.DebugFormat("Minification of '{0}' took {1}ms", this.AbsolutePath,
+					sw.TimeMilliseconds(() => sourceCode = this.Minify(sourceCode)));
+			}
+
+			return sourceCode;
 		}
 
 		private static string CombineUrls(string folderUrl, string fileUrl)
@@ -82,7 +83,7 @@ namespace Kelp.ResourceHandling
 			if (folderUrl == string.Empty)
 				return fileUrl;
 
-			string filePath = string.Concat(folderUrl, "/", fileUrl).Replace("//", "/");
+			var filePath = string.Concat(folderUrl, "/", fileUrl).Replace("//", "/");
 			while (Regex.Match(filePath, @"[^/]+/\.\./").Success)
 			{
 				filePath = Regex.Replace(filePath, @"[^/]+/\.\./", string.Empty);
@@ -92,13 +93,16 @@ namespace Kelp.ResourceHandling
 			return filePath;
 		}
 
-		private void FixRelativePaths()
+		private string FixRelativePaths(string sourceCode, string relativePath)
 		{
-			string fileFolder = this.RelativePath.Contains("/")
-				? this.RelativePath.Substring(0, this.RelativePath.LastIndexOf("/") + 1)
+			if (string.IsNullOrEmpty(relativePath))
+				return sourceCode;
+
+			var fileFolder = relativePath.Contains("/")
+				? this.RelativePath.Substring(0, relativePath.LastIndexOf("/") + 1)
 				: string.Empty;
 
-			this.rawContent = rxpReferencePath.Replace(this.rawContent, delegate(Match m)
+			var processed = rxpReferencePath.Replace(sourceCode, delegate(Match m)
 			{
 				string fileName = m.Groups[2].Value;
 				if (fileName.StartsWith("http") || fileName.StartsWith("/"))
@@ -106,6 +110,8 @@ namespace Kelp.ResourceHandling
 
 				return string.Concat(m.Groups[1].Value, CombineUrls(fileFolder, fileName), m.Groups[3].Value);
 			});
+
+			return processed;
 		}
 	}
 }

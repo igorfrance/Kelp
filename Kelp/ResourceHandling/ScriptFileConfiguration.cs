@@ -88,7 +88,7 @@ namespace Kelp.ResourceHandling
 		/// <summary>
 		/// Gets the <see cref="CodeSettings"/> associated with this instance.
 		/// </summary>
-		public CodeSettings Settings { get; private set; }
+		public CodeSettings Settings { get; internal set; }
 
 		/// <inheritdoc/>
 		protected override List<string> BoolProps

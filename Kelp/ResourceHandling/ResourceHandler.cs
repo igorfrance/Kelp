@@ -72,7 +72,7 @@ namespace Kelp.ResourceHandling
 		public void ProcessRequest(HttpContext context)
 		{
 			string absolutePath = context.Request.PhysicalPath;
-			string extension = Path.GetExtension(absolutePath);
+			string extension = Path.GetExtension(absolutePath).Trim('.');
 			HttpContextWrapper wrapped = new HttpContextWrapper(context);
 
 			if (File.Exists(absolutePath))

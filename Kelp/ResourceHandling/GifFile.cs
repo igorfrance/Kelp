@@ -25,6 +25,7 @@ namespace Kelp.ResourceHandling
 	/// <summary>
 	/// Represents a GIF <see cref="ImageFile"/>
 	/// </summary>
+	[ResourceFile(ResourceType.Image, "image/gif", "gif", "gif")]
 	public class GifFile : ImageFile
 	{
 		/// <summary>

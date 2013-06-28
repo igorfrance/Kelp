@@ -16,8 +16,11 @@
 namespace Kelp.ResourceHandling
 {
 	using System;
+	using System.Diagnostics;
 	using System.Diagnostics.Contracts;
 	using System.Text;
+
+	using Kelp.Extensions;
 
 	using log4net;
 	using Microsoft.Ajax.Utilities;
@@ -25,9 +28,11 @@ namespace Kelp.ResourceHandling
 	/// <summary>
 	/// Implements a JS file merger/processor, optionally minifying and obfuscating them.
 	/// </summary>
+	[ResourceFile(ResourceType.Script, "text/javascript", "js")]
 	public class ScriptFile : CodeFile
 	{
 		private static readonly ILog log = LogManager.GetLogger(typeof(ScriptFile));
+		private readonly Stopwatch sw = new Stopwatch();
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="ScriptFile"/> class.
@@ -39,31 +44,24 @@ namespace Kelp.ResourceHandling
 			this.ResourceType = ResourceType.Script;
 		}
 
-		/// <summary>
-		/// Initializes a new instance of the <see cref="ScriptFile" /> class, using the specified absolute and 
-		/// relative paths, and the specified <paramref name="configuration"/>.
-		/// </summary>
-		/// <param name="absolutePath">The path of the file to load.</param>
-		/// <param name="relativePath">The relative path of the file to load.</param>
-		/// <param name="configuration">The processing configuration for this file.</param>
-		public ScriptFile(string absolutePath, string relativePath, FileTypeConfiguration configuration)
-			: base(configuration)
-		{
-			this.ContentType = "text/javascript";
-		}
-
-		/// <summary>
-		/// Initializes a new instance of the <see cref="ScriptFile" /> class, using the specified absolute and relative paths.
-		/// </summary>
-		/// <param name="absolutePath">The path of the file to load.</param>
-		/// <param name="relativePath">The relative path of the file to load.</param>
-		public ScriptFile(string absolutePath, string relativePath)
-			: this(absolutePath, relativePath, ResourceHandling.Configuration.Current.Script)
-		{
-		}
-
 		/// <inheritdoc/>
-		public override string Minify(string sourceCode)
+		protected override string PostProcess(string sourceCode)
+		{
+			if (this.Configuration.MinificationEnabled)
+			{
+				log.DebugFormat("Minification of '{0}' took {1}ms", this.AbsolutePath,
+					sw.TimeMilliseconds(() => sourceCode = this.Minify(this.content.ToString())));
+			}
+
+			return sourceCode;
+		}
+
+		/// <summary>
+		/// Removes all comments and white-space and optimizes the source code for minimum size.
+		/// </summary>
+		/// <param name="sourceCode">The source code.</param>
+		/// <returns>The minified source code.</returns>
+		public string Minify(string sourceCode)
 		{
 			Minifier min = new Minifier();
 			ScriptFileConfiguration scriptConfiguration = (ScriptFileConfiguration) this.Configuration;
@@ -71,9 +69,6 @@ namespace Kelp.ResourceHandling
 
 			if (min.ErrorList.Count == 0)
 			{
-				if (DebugModeOn)
-					log.Debug("Minified code: " + minified);
-
 				return minified;
 			}
 

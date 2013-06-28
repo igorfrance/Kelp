@@ -25,22 +25,22 @@ namespace Kelp.Test.ResourceHandling
 	using Kelp.ResourceHandling;
 	using Machine.Specifications;
 
+	using Microsoft.Ajax.Utilities;
+
 	[Subject(typeof(ScriptFile)), Tags(Categories.ResourceHandling)]
 	public class When_getting_an_including_file : CodeFileTest
 	{
 		private static string content;
-		private static CodeFile subject;
+		private static ScriptFile subject;
 
 		private Establish context = () =>
 		{
-			subject = CreateInstance();
-			Utilities.ClearTemporaryDirectory();
-			content = subject.Content;
+			subject = CodeFile.Create<ScriptFile>(Utilities.GetScriptPath("script1.js"));
 		};
 
-		private It Should_contain_included_file1 = () => content.ShouldContain("Test.ExampleClass1");
-		private It Should_contain_included_file2 = () => content.ShouldContain("Test.ExampleClass2");
-		private It Should_contain_included_file3 = () => content.ShouldContain("Test.ExampleClass3");
+		private It Should_contain_included_file1 = () => subject.Content.ShouldContain("Test.ExampleClass1");
+		private It Should_contain_included_file2 = () => subject.Content.ShouldContain("Test.ExampleClass2");
+		private It Should_contain_included_file3 = () => subject.Content.ShouldContain("Test.ExampleClass3");
 		private It Should_save_the_resulting_file_to_cache = () => File.Exists(subject.CacheName).ShouldBeTrue();
 		private It Should_include_files_in_proper_order = () =>
 		{
@@ -59,14 +59,18 @@ namespace Kelp.Test.ResourceHandling
 			keys.ElementAt(2).ShouldContain("include2");
 			keys.ElementAt(3).ShouldContain("script1");
 
-			CreateInstance().PreviouslyCached.ShouldBeTrue();
-
+			string testString = string.Format("// NOW: {0}\r\n", DateTime.Now.Ticks);
 			string scriptPath = Utilities.GetScriptPath("include2.js");
-			File.SetLastWriteTime(scriptPath, DateTime.Now);
-			Thread.Sleep(500);
 
-			CodeFile other = CreateInstance();
-			other.PreviouslyCached.ShouldBeFalse();
+			Thread.Sleep(10);
+			File.AppendAllText(scriptPath, testString);
+
+			ScriptFile other = CodeFile.Create<ScriptFile>(new ScriptFileConfiguration { Settings = new CodeSettings {
+				MinifyCode = false
+			}});
+
+			other.Load(Utilities.GetScriptPath("script1.js"));
+			other.Content.ShouldContain(testString);
 
 			IEnumerable<string> keys2 = other.References.Keys;
 			keys2.ElementAt(0).ShouldContain("include1");
@@ -75,21 +79,16 @@ namespace Kelp.Test.ResourceHandling
 			keys2.ElementAt(3).ShouldContain("script1");
 		};
 
-		private static CodeFile CreateInstance()
-		{
-			return CodeFile.Create(Utilities.GetScriptPath("script1.js"), "script1.js");
-		}
 	}
 
 	[Subject(typeof(ScriptFile)), Tags(Categories.ResourceHandling)]
 	public class When_getting_a_file_with_indirect_self_inclusion : CodeFileTest
 	{
-		private static string content;
-		private static ScriptFile subject = (ScriptFile)
-				CodeFile.Create(Utilities.GetScriptPath("script2.js"), "script2.js");
-
-		private It Should_throw_an_InvalidOperationException = () =>
-			Catch.Exception(() => content = subject.Content).ShouldBeOfType<InvalidOperationException>();
+		private It Should_throw_an_InvalidOperationException = () => Catch.Exception(() => 
+		{
+			CodeFile.Create(Utilities.GetScriptPath("script2.js"));
+			
+		}).ShouldBeOfType<InvalidOperationException>();
 	}
 
 	[Subject(typeof(ScriptFile)), Tags(Categories.ResourceHandling)]
@@ -113,7 +112,10 @@ namespace Kelp.Test.ResourceHandling
 			subject.Minify(Utilities.GetScriptContents("multiline-string1.js")).ShouldNotContain("\n");
 
 		private It Multiline_strings_with_backslash_syntax_should_not_result_in_errors = () =>
-			subject.Minify(Utilities.GetScriptContents("multiline-string2.js")).ShouldNotContain("\n");
+		{
+			var minified = subject.Minify(Utilities.GetScriptContents("multiline-string2.js"));
+			minified.ShouldNotContain("\n");
+		};
 
 		private It Should_remove_whitespace_from_expressions = () =>
 			subject.Minify(Utilities.GetScriptContents("formatting3.js")).ShouldContain("8/12+4");
@@ -138,8 +140,6 @@ namespace Kelp.Test.ResourceHandling
 
 		private Establish ctx = () =>
 		{
-			Utilities.ClearTemporaryDirectory();
-
 			subject = (ScriptFile) CodeFile.Create(scriptPath, scriptName);
 			contents = subject.Content;
 		};
@@ -161,9 +161,9 @@ namespace Kelp.Test.ResourceHandling
 		{
 			File.SetLastWriteTime(scriptPath, DateTime.Now);
 			File.SetLastWriteTime(subject.CacheName, DateTime.Now.AddDays(-1));
+			
 			Thread.Sleep(1000);
-
-			new ScriptFile(scriptPath, scriptName).Content.ShouldNotContain("Cached line");
+			CodeFile.Create(scriptPath).Content.ShouldNotContain("Cached line");
 		};
 	}
 
@@ -177,14 +177,11 @@ namespace Kelp.Test.ResourceHandling
 
 		private Establish ctx = () =>
 		{
-			Utilities.ClearTemporaryDirectory();
-			proc = new ScriptFile(scriptPath, ScriptName);
-			proc.DebugModeOn = true;
+			proc = CodeFile.Create<ScriptFile>(scriptPath);
 		};
 
-		private Because of = () => contents = proc.Content;
-
-		private It Should_remove_whitespace_and_comments = () => contents.ShouldEqual("var rAnimate={isBusy:!1,Move:{}}");
+		private It Should_remove_whitespace_and_comments = () =>
+			proc.Content.ShouldEqual("var rAnimate={isBusy:!1,Move:{}}");
 	}
 
 	[Subject(typeof(ScriptFile)), Tags(Categories.ResourceHandling)]
@@ -197,9 +194,8 @@ namespace Kelp.Test.ResourceHandling
 
 		private Establish ctx = () =>
 		{
-			Utilities.ClearTemporaryDirectory();
-			proc = new ScriptFile(scriptPath, ScriptName);
-			proc.DebugModeOn = true;
+			proc = new ScriptFile();
+			proc.Load(scriptPath, ScriptName);
 		};
 
 		private Because of = () => contents = proc.Content;
@@ -216,11 +212,10 @@ namespace Kelp.Test.ResourceHandling
 
 		private Establish ctx = () =>
 		{
-			Utilities.ClearTemporaryDirectory();
-			proc = new ScriptFile(scriptPath, ScriptName);
-			proc.DebugModeOn = true;
-			proc.AddContentFromFile(Utilities.GetScriptPath("simple1.js"));
-			proc.AddContentFromFile(Utilities.GetScriptPath("simple2.js"));
+			proc = new ScriptFile();
+			proc.Load(scriptPath, ScriptName);
+			proc.AddFile(Utilities.GetScriptPath("simple1.js"));
+			proc.AddFile(Utilities.GetScriptPath("simple2.js"));
 		};
 
 		private It Should_contain_content_of_included_files = () =>

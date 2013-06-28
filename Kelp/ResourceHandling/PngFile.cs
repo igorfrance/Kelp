@@ -22,6 +22,7 @@ namespace Kelp.ResourceHandling
 	/// <summary>
 	/// Represents a PNG <see cref="ImageFile"/>
 	/// </summary>
+	[ResourceFile(ResourceType.Image, "image/png", "png", "png")]
 	public class PngFile : ImageFile
 	{
 		/// <summary>

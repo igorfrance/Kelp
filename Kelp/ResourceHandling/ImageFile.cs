@@ -16,10 +16,13 @@
 namespace Kelp.ResourceHandling
 {
 	using System;
+	using System.Collections.Generic;
 	using System.Diagnostics.Contracts;
 	using System.Drawing;
 	using System.Drawing.Imaging;
 	using System.IO;
+	using System.Linq;
+	using System.Reflection;
 
 	using Kelp.Extensions;
 	using Kelp.Http;
@@ -42,7 +45,7 @@ namespace Kelp.ResourceHandling
 		protected QueryString parameters;
 
 		private static readonly ILog log = LogManager.GetLogger(typeof(ImageFile).FullName);
-		private static readonly string[] extensions = new[] { "gif", "jpg", "jpeg", "bmp", "png" };
+		private static List<string> extensions;
 		private readonly string absolutePath;
 		private byte[] imageBytes;
 		private MemoryStream stream;
@@ -217,10 +220,10 @@ namespace Kelp.ResourceHandling
 			return instance;
 		}
 
-		internal static bool IsFileExtensionSupported(string extension)
+		internal static bool IsFileExtensionSupported2(string extension)
 		{
 			Contract.Requires<ArgumentNullException>(!string.IsNullOrEmpty(extension));
-			return extension.Replace(".", string.Empty).ToLower().ContainsAnyOf(extensions);
+			return extension.Replace(".", string.Empty).ToLower().ContainsAnyOf(extensions.ToArray());
 		}
 
 		private byte[] Load()
@@ -261,6 +264,30 @@ namespace Kelp.ResourceHandling
 			}
 
 			return imageData;
+		}
+
+		internal static bool IsFileExtensionSupported(string extension)
+		{
+			if (extensions == null)
+			{
+				extensions = new List<string>();
+				var types = from t in Assembly.GetExecutingAssembly().GetTypes()
+							where t.IsClass && !t.IsAbstract
+							select t;
+
+				foreach (Type type in types)
+				{
+					var attribs = type.GetCustomAttributes(typeof(ResourceFileAttribute), false);
+					if (attribs.Length != 0)
+					{
+						var resourceAttrib = (ResourceFileAttribute) attribs[0];
+						if (resourceAttrib.ContentType.ContainsAnyOf("image"))
+							extensions.AddRange(resourceAttrib.Extensions);
+					}
+				}
+			}
+
+			return extensions.Contains(extension, StringComparer.InvariantCultureIgnoreCase);
 		}
 	}
 }

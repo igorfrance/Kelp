@@ -25,7 +25,6 @@ namespace Kelp.ResourceHandling
 	using System.Security.Cryptography;
 	using System.Text;
 	using System.Text.RegularExpressions;
-	using System.Threading;
 
 	using Kelp.Extensions;
 	using Kelp.Http;
@@ -48,13 +47,23 @@ namespace Kelp.ResourceHandling
 		/// </summary>
 		protected StringBuilder content = new StringBuilder();
 
+		/// <summary>
+		/// The file's unprocessed source code.
+		/// </summary>
+		protected StringBuilder rawContent = new StringBuilder();
+
+		private string temporaryDirectory;
+
 		private static readonly ILog log = LogManager.GetLogger(typeof(CodeFile).FullName);
 		private static readonly Regex instructionExpression = new Regex(@"^\s*/\*#\s*(?'name'\w+):\s*(?'value'.*?) \*/");
-		private readonly Stopwatch sw = new Stopwatch();
-		private bool isFromCache;
+		private static List<string> fileExtensions;
 
+		/// <summary>
+		/// Initializes a new instance of the <see cref="CodeFile"/> class.
+		/// </summary>
 		protected CodeFile()
 		{
+			this.References = new OrderedDictionary<string, string>();
 		}
 
 		/// <summary>
@@ -64,14 +73,12 @@ namespace Kelp.ResourceHandling
 		/// <param name="configuration">The processing configuration for this file.</param>
 		/// <param name="parent">The script processor creating this instance (used when processing includes)</param>
 		protected CodeFile(FileTypeConfiguration configuration, CodeFile parent = null)
+			: this()
 		{
 			this.Parent = parent;
 			this.Configuration = configuration;
 			this.CachedConfigurationSettings = string.Empty;
-			this.TemporaryDirectory = configuration.TemporaryDirectory;
-			this.References = new OrderedDictionary<string, string>();
-			if (parent != null)
-				this.Parent = parent;
+			this.Parent = parent;
 		}
 
 		/// <summary>
@@ -80,20 +87,6 @@ namespace Kelp.ResourceHandling
 		/// <exception cref="ArgumentNullException">If the supplied value is <c>null</c> or empty.</exception>
 		/// <exception cref="FileNotFoundException">If the specified value could not be resolved to an existing file.</exception>
 		public string AbsolutePath { get; private set; }
-
-		/// <summary>
-		/// Gets a value indicating whether this instance has been loaded and initialized entirely from cache.
-		/// </summary>
-		public bool PreviouslyCached
-		{
-			get
-			{
-				if (!this.initialized)
-					this.Initialize();
-
-				return this.isFromCache;
-			}
-		}
 
 		/// <summary>
 		/// Gets the relative path of this code file.
@@ -135,7 +128,6 @@ namespace Kelp.ResourceHandling
 		{
 			get
 			{
-				this.Initialize();
 				return content.ToString();
 			}
 
@@ -152,18 +144,13 @@ namespace Kelp.ResourceHandling
 		{
 			get
 			{
-				this.Load();
-				return rawContent;
+				return rawContent.ToString();
 			}
 		}
 
 		/// <summary>
-		/// Gets the previously persisted list of <see cref="Includes"/>.
+		/// Gets the dictionary of files that this code file references.
 		/// </summary>
-		/// <remarks>
-		/// This list is used to determine if a previously processed file needs to be refreshed due to changes in
-		/// its constituent files.
-		/// </remarks>
 		public OrderedDictionary<string, string> References
 		{
 			get;
@@ -182,11 +169,6 @@ namespace Kelp.ResourceHandling
 		}
 
 		/// <summary>
-		/// Gets or sets a value indicating whether to output additional debug information to the output stream.
-		/// </summary>
-		internal bool DebugModeOn { get; set; }
-
-		/// <summary>
 		/// Gets the full name of the temporary file where the processed version of this file will be saved.
 		/// </summary>
 		/// <remarks>
@@ -200,7 +182,7 @@ namespace Kelp.ResourceHandling
 					return null;
 
 				string fileName = this.AbsolutePath.ReplaceAll(@"[\\/:]", "_");
-				return Path.Combine(this.Configuration.TemporaryDirectory, fileName);
+				return Path.Combine(this.TemporaryDirectory, fileName);
 			}
 		}
 
@@ -216,44 +198,18 @@ namespace Kelp.ResourceHandling
 		/// </summary>
 		public FileTypeConfiguration Configuration { get; protected set; }
 
-		internal string CachedConfigurationSettings { get; private set; }
-
 		/// <summary>
-		/// Gets a value indicating whether the cached <see cref="CodeFile"/> needs to be refreshed.
+		/// The directory to use for caching
 		/// </summary>
-		/// <value><c>true</c> if the cached file is out of date; otherwise, <c>false</c>.</value>
-		/// <remarks>
-		/// The cached file is considered out-of-date when any of the included files has a last-modified-date 
-		/// greater than the cached file.
-		/// </remarks>
-		protected virtual bool NeedsRefresh(string cacheName)
+		protected string TemporaryDirectory
 		{
-			var currentSettings = this.Configuration.ToString();
-			if (this.CachedConfigurationSettings != currentSettings)
-				return true;
-
-			if (!File.Exists(cacheName))
-				return true;
-
-			DateTime lastModified = Util.GetDateLastModified(cacheName);
-			foreach (string file in this.references.Keys)
+			get
 			{
-				if (!File.Exists(file))
-				{
-					log.DebugFormat("Refresh needed for '{0}' because referenced file '{1}' doesn't exist.", AbsolutePath, file);
-					return true;
-				}
-
-				var fileModified = Util.GetDateLastModified(file);
-				if (fileModified > lastModified)
-				{
-					log.DebugFormat("Refresh needed for '{0}' (modified: {2}) because referenced file '{1}' (modified: {3}) is newer.", AbsolutePath, file, lastModified, fileModified);
-					return true;
-				}
+				return temporaryDirectory ?? this.Configuration.TemporaryDirectory;
 			}
-
-			return false;
 		}
+
+		internal string CachedConfigurationSettings { get; private set; }
 
 		/// <summary>
 		/// Gets a value indicating whether minification is enabled for this code file.
@@ -267,28 +223,28 @@ namespace Kelp.ResourceHandling
 		}
 
 		/// <summary>
-		/// Returns an instance of <see cref="CodeFile" /> that matches the specified <paramref name="resourceType" />.
+		/// Returns an instance of <see cref="CodeFile" /> that matches the specified <typeparamref name="T"/>
 		/// </summary>
-		/// <param name="resourceType">The resource type .</param>
+		/// <typeparam name="T">The specific type of the code file to create</typeparam>
 		/// <param name="absolutePath">Optional physical path of the file to load into created <see cref="CodeFile" />.</param>
 		/// <param name="relativePath">Optional relative path of the file to load.</param>
 		/// <param name="parent">Optional parent <see cref="CodeFile"/> that is including this <see cref="CodeFile"/></param>
 		/// <returns>The code file matching the specified resource type, optionally loaded with contents from <paramref name="absolutePath"/>.</returns>
-		public static CodeFile Create(ResourceType resourceType, string absolutePath = null, string relativePath = null, CodeFile parent = null)
+		public static T Create<T>(string absolutePath = null, string relativePath = null, CodeFile parent = null) where T : CodeFile
 		{
-			CodeFile result;
-			if (resourceType == ResourceType.Css)
-				result = new CssFile();
-			else
-				result = new ScriptFile();
+			CodeFile result = (CodeFile) typeof(T).GetConstructor(new Type[] { }).Invoke(new object[] { });
 
 			if (parent != null)
+			{
 				result.Parent = parent;
+				if (parent.temporaryDirectory != null)
+					result.temporaryDirectory = parent.temporaryDirectory;
+			}
 
 			if (!string.IsNullOrEmpty(absolutePath))
 				result.Load(absolutePath, relativePath);
 
-			return result;
+			return result as T;
 		}
 
 		/// <summary>
@@ -304,12 +260,58 @@ namespace Kelp.ResourceHandling
 		{
 			Contract.Requires<ArgumentNullException>(!string.IsNullOrEmpty(absolutePath));
 
-			if (absolutePath.ToLower().EndsWith("css"))
-				return CodeFile.Create(ResourceType.Css, absolutePath, relativePath, parent);
+			string extension = Path.GetExtension(absolutePath).Trim('.');
+			if (extension.EndsWith("css"))
+				return CodeFile.Create<CssFile>(absolutePath, relativePath, parent);
+			if (extension.EndsWith("less"))
+				return CodeFile.Create<LessCssFile>(absolutePath, relativePath, parent);
 
-			return CodeFile.Create(ResourceType.Script, absolutePath, relativePath, parent);
+			return CodeFile.Create<ScriptFile>(absolutePath, relativePath, parent);
 		}
 
+		/// <summary>
+		/// Creates the specified absolute path.
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <param name="configuration">The configuration.</param>
+		/// <returns>CodeFile.</returns>
+		public static T Create<T>(FileTypeConfiguration configuration) where T : CodeFile
+		{
+			CodeFile result = Create<T>();
+			result.Configuration = configuration;
+			return result as T;
+		}
+
+		/// <summary>
+		/// Creates the specified absolute path.
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <returns>CodeFile.</returns>
+		public static T Create<T>() where T : CodeFile
+		{
+			CodeFile result = (CodeFile) typeof(T).GetConstructor(new Type[] { }).Invoke(new object[] { });
+			return result as T;
+		}
+
+		/// <summary>
+		/// Returns an instance of <see cref="CodeFile" />, loaded with content from <paramref name="absolutePath"/>.
+		/// </summary>
+		/// <param name="absolutePath">The physical path of the file to load into created <see cref="CodeFile" />.</param>
+		/// <param name="relativePath">The relative path of the file to load.</param>
+		/// <param name="temporaryDirectory">The temporary directory to use for caching</param>
+		/// <returns>A code file appropriate for the specified <paramref name="absolutePath"/>.
+		/// If the extension of the specified <paramref name="absolutePath"/> is <c>css</c>, the resulting value will be a 
+		/// new <see cref="CssFile"/>. In all other cases the resulting value is a <see cref="ScriptFile"/>.</returns>
+		public static CodeFile Create(string absolutePath, string relativePath, string temporaryDirectory)
+		{
+			Contract.Requires<ArgumentNullException>(!string.IsNullOrEmpty(absolutePath));
+			Contract.Requires<ArgumentNullException>(!string.IsNullOrEmpty(relativePath));
+			Contract.Requires<ArgumentNullException>(!string.IsNullOrEmpty(temporaryDirectory));
+
+			CodeFile result = CodeFile.Create(absolutePath, relativePath);
+			result.temporaryDirectory = temporaryDirectory;
+			return result;
+		}
 
 		/// <summary>
 		/// Gets an E-tag for the specified <paramref name="fileName"/> and <paramref name="lastModified"/> date.
@@ -334,15 +336,6 @@ namespace Kelp.ResourceHandling
 			return BitConverter.ToString(md5.ComputeHash(bytes)).Replace("-", string.Empty).ToLower();
 		}
 
-		/// <summary>
-		/// Minifies the specified <paramref name="sourceCode"/>.
-		/// </summary>
-		/// <param name="sourceCode">The source code string to minify.</param>
-		/// <returns>
-		/// The minified version of this file's content.
-		/// </returns>
-		public abstract string Minify(string sourceCode);
-
 		/// <inheritdoc/>
 		public override string ToString()
 		{
@@ -350,42 +343,16 @@ namespace Kelp.ResourceHandling
 		}
 
 		/// <summary>
-		/// Adds a file to this code file.
+		/// Parses and the content and references of the specified file to this code file.
 		/// </summary>
-		/// <param name="path">The path of the file to add.</param>
-		/// <returns>A value indicating whether the file exists.</returns>
-		public bool AddFile(string path)
+		/// <param name="file">The file to add.</param>
+		public void AddFile(string file)
 		{
-			var directory = Path.GetDirectoryName(this.AbsolutePath);
-			var includePath = Path.Combine(directory, Regex.Replace(path, @"\?.*$", string.Empty));
-
-			if (File.Exists(includePath))
-			{
-				if (includePath.Equals(this.AbsolutePath, StringComparison.InvariantCultureIgnoreCase))
-				{
-					log.FatalFormat("The script cannot include itself. The script is: {0}({1})", path, includePath);
-					throw new InvalidOperationException("The script cannot include itself.");
-				}
-
-				if (IsPathInIncludeChain(includePath))
-				{
-					log.FatalFormat("Including the referenced path would cause recursion due to it being present at a level higher above. The script is: {0}({1})", path, includePath);
-					throw new InvalidOperationException("Including the referenced path would cause recursion due to it being present at a level higher above.");
-				}
-
-				var inner = CodeFile.Create(includePath, path, this);
-				this.content.AppendLine(inner.Content);
-
-				foreach (var absPath in inner.References.Keys)
-				{
-					this.AddReference(absPath, inner.References[absPath]);
-				}
-
-				return true;
-			}
-
-			this.AddReference(includePath, null);
-			return false;
+			var inner = CodeFile.Create(file);
+			this.content.Append(inner.Content);
+			this.rawContent.Append(inner.RawContent);
+			foreach (string absolutePath in inner.References.Keys)
+				this.AddReference(absolutePath, inner.References[absolutePath]);
 		}
 
 		/// <summary>
@@ -398,10 +365,9 @@ namespace Kelp.ResourceHandling
 		/// <exception cref="ArgumentNullException">If the specified <c>path</c> is <c>null</c>.</exception>
 		internal bool IsPathInIncludeChain(string path)
 		{
-			if (path == null)
-				throw new ArgumentNullException("path");
+			Contract.Requires<ArgumentNullException>(!string.IsNullOrEmpty(path));
 
-			if (parent == null)
+			if (this.Parent == null)
 				return false;
 
 			bool contains = false;
@@ -411,153 +377,92 @@ namespace Kelp.ResourceHandling
 				contains = ancestor.Dependencies.Any(value => 
 					value.Equals(path, StringComparison.InvariantCultureIgnoreCase));
 
-				ancestor = ancestor.parent;
+				ancestor = ancestor.Parent;
 			}
 
 			return contains;
 		}
 
 		/// <summary>
-		/// Initialized this <see cref="CodeFile"/>.
+		/// Performs file-type specific pre-processing of the source code.
 		/// </summary>
-		protected void InitializeOld()
+		/// <param name="sourceCode">The source code.</param>
+		/// <param name="relativePath">The relative path of the current parent parse context, if any.</param>
+		/// <returns>Preprocessed source code.</returns>
+		protected virtual string PreProcess(string sourceCode, string relativePath)
 		{
-			if (this.initialized)
-				return;
-
-			while (true)
-			{
-				try
-				{
-					this.InitializeActual();
-					break;
-				}
-				catch (IOException)
-				{
-					if (++this.retryCount == MaxLoadAttempts)
-						throw;
-
-					Thread.Sleep(TimeSpan.FromMilliseconds(RetryWaitInterval));
-				}
-			}
-
-			this.retryCount = 0;
+			return sourceCode;
 		}
 
-		private void InitializeActualOld()
+		/// <summary>
+		/// Performs file-type specific post-processing of the source code
+		/// </summary>
+		/// <param name="sourceCode">The source code.</param>
+		/// <returns>Preprocessed source code.</returns>
+		protected virtual string PostProcess(string sourceCode)
 		{
-			if (this.initialized || this.initializing)
-				return;
-
-			this.initializing = true;
-			this.Load();
-
-			if (File.Exists(this.CacheName))
-			{
-				log.DebugFormat("Parsing cached file for '{0}'", this.AbsolutePath);
-				this.Parse(File.ReadAllText(this.CacheName), false);
-			}
-
-			if (!this.NeedsRefresh)
-			{
-				log.DebugFormat("No refresh needed for '{0}', returning.", this.AbsolutePath);
-				this.initialized = true;
-				this.isFromCache = true;
-				return;
-			}
-
-			this.references.Clear();
-
-			log.DebugFormat("Parsing raw content for '{0}'.", this.AbsolutePath);
-
-			this.Parse(this.rawContent, true);
-
-			if (!string.IsNullOrEmpty(this.CacheName))
-			{
-				if (!Directory.Exists(this.TemporaryDirectory))
-				{
-					try
-					{
-						Directory.CreateDirectory(this.TemporaryDirectory);
-					}
-					catch (Exception ex)
-					{
-						log.ErrorFormat("Could not create temporary directory '{0}': {1}", this.TemporaryDirectory, ex.Message);
-					}
-				}
-
-				try
-				{
-					StringBuilder persistContent = new StringBuilder();
-					persistContent.AppendLine(string.Format("/*# Configuration: {0} */", this.Configuration));
-					foreach (string includePath in this.references.Keys)
-						persistContent.AppendLine(string.Format("/*# Reference: {0} | {1} */", includePath, this.references[includePath]));
-
-					persistContent.AppendLine();
-					persistContent.Append(this.content);
-
-					File.WriteAllText(this.CacheName, persistContent.ToString(), Encoding.UTF8);
-					log.DebugFormat("Saved the temporary contents of '{0}' to '{1}'.", AbsolutePath, this.CacheName);
-				}
-				catch (Exception ex)
-				{
-					log.ErrorFormat("Could not save the temporary file '{0}': {1}", this.CacheName, ex.Message);
-				}
-			}
-
-			this.initialized = true;
-			this.initializing = false;
+			return sourceCode;
 		}
 
 		/// <summary>
 		/// Loads the file, either from cache or from its <see cref="AbsolutePath"/>.
 		/// </summary>
-		protected virtual void Load(string absolutePath, string relativePath = null)
+		public virtual void Load(string absolutePath, string relativePath = null)
 		{
 			Contract.Requires<ArgumentNullException>(!string.IsNullOrEmpty(absolutePath));
 			Contract.Requires<FileNotFoundException>(File.Exists(absolutePath));
 
 			this.AbsolutePath = absolutePath;
-			if (string.IsNullOrEmpty(relativePath))
-			{
-				this.RelativePath = Path.GetFileName(absolutePath);
-			}
+			this.RelativePath = relativePath ?? Path.GetFileName(absolutePath);
 			if (this.Parent != null)
 			{
 				this.RelativePath = Path.Combine(Path.GetDirectoryName(Parent.RelativePath), this.RelativePath);
 			}
 
 			var cacheEntry = new CacheEntry(this.CacheName);
+			ParseResult result;
 
 			if (this.NeedsRefresh(cacheEntry))
 			{
 				var sourceCode = File.ReadAllText(absolutePath, Encoding.UTF8);
-				var result = this.Parse(sourceCode, this.MinificationEnabled);
-
-				this.content = new StringBuilder(result.Content.ToString());
-
-				this.References.Clear();
-				foreach (KeyValuePair<string, string> reference in result.References)
-					this.AddReference(reference.Key, reference.Value);
-
-				this.References.Add(this.AbsolutePath, this.RelativePath);
+				result = this.Parse(sourceCode);
 			}
 			else
 			{
-				
+				result = this.Parse(cacheEntry.Content);
 			}
+
+			this.content = new StringBuilder(result.Content.ToString());
+			this.rawContent = new StringBuilder(result.RawContent);
+
+			this.References.Clear();
+			foreach (KeyValuePair<string, string> reference in result.References)
+				this.AddReference(reference.Key, reference.Value);
+
+			this.References.Add(this.AbsolutePath, this.RelativePath);
+
+			this.content = new StringBuilder(this.PostProcess(this.Content));
+			this.CacheToTemporaryDirectory();
 		}
 
 		/// <summary>
 		/// Scans through the specified source code and processes it line by line.
 		/// </summary>
 		/// <param name="sourceCode">The source code to parse.</param>
+		/// <param name="container">Optional parse container (for recursive calls).</param>
+		/// <param name="absolutePath">The absolute path of the parsed file (for recursive calls).</param>
+		/// <param name="relativePath">The relative path of the parsed file (for recursive calls).</param>
 		/// <returns>The object that contains the result of parsing the source code.</returns>
-		protected virtual ParseResult Parse(string sourceCode)
+		/// <exception cref="System.InvalidOperationException">The script cannot include itself.</exception>
+		protected virtual ParseResult Parse(string sourceCode, ParseResult container = null, string absolutePath = null, string relativePath = null)
 		{
 			Contract.Requires<ArgumentNullException>(sourceCode != null);
 
-			ParseResult result = new ParseResult(this.ResourceType);
+			sourceCode = this.PreProcess(sourceCode, relativePath);
+			absolutePath = absolutePath ?? this.AbsolutePath;
+			relativePath = relativePath ?? this.RelativePath;
+
+			ParseResult result = new ParseResult(sourceCode, container, relativePath);
 			string[] lines = sourceCode.Replace("\r", string.Empty).Split(new[] { '\n' });
 
 			foreach (string line in lines)
@@ -582,9 +487,35 @@ namespace Kelp.ResourceHandling
 							break;
 
 						case "include":
-							var exists = this.AddFile(value);
-							if (!exists)
+							var includePath = value;
+							if (!Path.IsPathRooted(value))
+							{
+								var directory = Path.GetDirectoryName(absolutePath);
+								includePath = Path.Combine(directory, Regex.Replace(value, @"\?.*$", string.Empty));
+							}
+
+							if (File.Exists(includePath))
+							{
+								if (includePath.Equals(absolutePath, StringComparison.InvariantCultureIgnoreCase))
+								{
+									log.FatalFormat("The script cannot include itself. The script is: {0}({1})", value, includePath);
+									throw new InvalidOperationException("The script cannot include itself.");
+								}
+
+								var includeContent = File.ReadAllText(includePath, Encoding.UTF8);
+								var inner = this.Parse(includeContent, result, includePath, value);
+								result.Content.Append(inner.Content);
+
+								foreach (var absPath in inner.References.Keys)
+									result.AddReference(absPath, inner.References[absPath]);
+
+								result.AddReference(includePath, value);
+							}
+							else
+							{
 								result.Content.AppendLine(line + "/* File not found */");
+							}
+
 							break;
 
 						default:
@@ -599,39 +530,23 @@ namespace Kelp.ResourceHandling
 			return result;
 		}
 
-		/// <summary>
-		/// Scans through the specified source code and processes it line by line.
-		/// </summary>
-		/// <param name="sourceCode">The source code to parse.</param>
-		/// <param name="minify">If set to <c>true</c>, and the current settings indicate that the source code will be minified.</param>
-		/// <returns>The object that contains the result of parsing the source code.</returns>
-		protected virtual ParseResult Parse(string sourceCode, bool minify)
-		{
-			var result = CodeFile.Parse(sourceCode);
-			if (this.Configuration.MinificationEnabled && minify)
-			{
-				log.DebugFormat("Minification of '{0}' took {1}ms", this.AbsolutePath,
-					sw.TimeMilliseconds(() => this.content = new StringBuilder(this.Minify(this.content.ToString()))));
-			}
-
-			return result;
-		}
-
 		private bool NeedsRefresh(CacheEntry cacheEntry)
 		{
 			if (!cacheEntry.Exists)
 				return true;
 
-			var parsed = this.Parse(cacheEntry.Content, false);
-			foreach (string filePath in parsed.References.Keys)
+			var parsed = this.Parse(cacheEntry.Content);
+			foreach (string referencePath in parsed.References.Keys)
 			{
-				if (!File.Exists(filePath))
+				if (!File.Exists(referencePath))
 					return true;
 
-				var fileModified = Util.GetDateLastModified(filePath);
-				if (fileModified > this.LastModified)
+				var referenceModified = Util.GetDateLastModified(referencePath);
+				if (referenceModified > cacheEntry.LastModified)
 					return true;
 			}
+
+			return false;
 		}
 
 		private void AddReference(string absolutePath, string relativePath)
@@ -643,113 +558,213 @@ namespace Kelp.ResourceHandling
 			this.References.Add(referenceKey, relativePath);
 		}
 
-		protected class ParseResult
+		private void CacheToTemporaryDirectory()
 		{
-			public StringBuilder Content = new StringBuilder();
-			
-			public OrderedDictionary<string, string> References = new OrderedDictionary<string, string>();
-			
-			public string Configuration;
+			if (this.CacheName == null)
+				return;
 
-			public ResourceType Type;
-
-			public ParseResult(ResourceType type)
+			if (!Directory.Exists(this.TemporaryDirectory))
 			{
-				this.Type = type;
+				try
+				{
+					Directory.CreateDirectory(this.TemporaryDirectory);
+				}
+				catch (Exception ex)
+				{
+					log.ErrorFormat("Could not create temporary directory '{0}': {1}", this.TemporaryDirectory, ex.Message);
+				}
 			}
 
-			public bool AddFile2(string path)
+			try
 			{
-				if (this.ReferencesFile(path))
-					return true;
+				StringBuilder persistContent = new StringBuilder();
+				persistContent.AppendLine(string.Format("/*# Configuration: {0} */", this.Configuration));
+				foreach (string includePath in this.References.Keys)
+					persistContent.AppendLine(string.Format("/*# Reference: {0} | {1} */", includePath, this.References[includePath]));
 
-				if (!File.Exists(path))
-					return false;
+				persistContent.AppendLine();
+				persistContent.Append(this.content);
 
-				var parsed = CodeFile.Create(this.Type);
-				File.ReadAllText(path, Encoding.UTF8));
-				foreach (KeyValuePair<string, string> reference in parsed.References)
-					this.AddReference(reference.Key, reference.Value);
+				File.WriteAllText(this.CacheName, persistContent.ToString(), Encoding.UTF8);
+				log.DebugFormat("Saved the temporary contents of '{0}' to '{1}'.", this.AbsolutePath, this.CacheName);
+			}
+			catch (Exception ex)
+			{
+				log.ErrorFormat("Could not save the temporary file '{0}': {1}", this.CacheName, ex.Message);
+			}
+		}
 
-				this.Content.AppendLine(parsed.Content);
+		/// <summary>
+		/// Contains all information about the file that was parsed
+		/// </summary>
+		protected class ParseResult
+		{
+			/// <summary>
+			/// String builder around the parsed content.
+			/// </summary>
+			public StringBuilder Content = new StringBuilder();
 
-				this.AddReference(path, null);
-				return false;
+			/// <summary>
+			/// The raw content of the parsed file
+			/// </summary>
+			public string RawContent;
+
+			/// <summary>
+			/// The relative path
+			/// </summary>
+			public string RelativePath;
+
+			/// <summary>
+			/// Dictionary of absolute-path/relative-path names of files referenced by parsed file
+			/// </summary>
+			public OrderedDictionary<string, string> References = new OrderedDictionary<string, string>();
+
+			/// <summary>
+			/// Configuration settings, if parsed from content.
+			/// </summary>
+			public string Configuration;
+
+			/// <summary>
+			/// The code file that created this object.
+			/// </summary>
+			public ParseResult Container;
+
+			/// <summary>
+			/// Initializes a new instance of the <see cref="ParseResult" /> class.
+			/// </summary>
+			/// <param name="rawContent">The raw content of the resource..</param>
+			/// <param name="container">Optional container object that represents content that included the content represented
+			/// by this <see cref="ParseResult" /> instance.</param>
+			/// <param name="relativePath">The relative path of the .</param>
+			public ParseResult(string rawContent, ParseResult container, string relativePath)
+			{
+				this.Container = container;
+				this.RawContent = rawContent;
+				this.RelativePath = relativePath ?? string.Empty;
 			}
 
 			/// <summary>
-			/// Adds a file to this code file.
+			/// Adds a reference to the specified <paramref name="absolutePath" /> and <paramref name="relativePath" />.
 			/// </summary>
-			/// <param name="path">The path of the file to add.</param>
-			/// <returns>A value indicating whether the file exists.</returns>
-			public bool AddFile(string path)
+			/// <param name="absolutePath">The absolute path.</param>
+			/// <param name="relativePath">The relative path.</param>
+			public void AddReference(string absolutePath, string relativePath = null)
 			{
-				var directory = Path.GetDirectoryName(this.AbsolutePath);
-				var includePath = Path.Combine(directory, Regex.Replace(path, @"\?.*$", string.Empty));
-
-				if (File.Exists(includePath))
+				relativePath = relativePath ?? Path.GetFileName(absolutePath);
+				if (IsPathInIncludeChain(absolutePath))
 				{
-					if (includePath.Equals(this.AbsolutePath, StringComparison.InvariantCultureIgnoreCase))
-					{
-						log.FatalFormat("The script cannot include itself. The script is: {0}({1})", path, includePath);
-						throw new InvalidOperationException("The script cannot include itself.");
-					}
-
-					if (IsPathInIncludeChain(includePath))
-					{
-						log.FatalFormat("Including the referenced path would cause recursion due to it being present at a level higher above. The script is: {0}({1})", path, includePath);
-						throw new InvalidOperationException("Including the referenced path would cause recursion due to it being present at a level higher above.");
-					}
-
-					var inner = CodeFile.Create(includePath, path, this);
-					this.content.AppendLine(inner.Content);
-
-					foreach (var absPath in inner.References.Keys)
-					{
-						this.AddReference(absPath, inner.References[absPath]);
-					}
-
-					return true;
+					log.FatalFormat("Including the referenced path would cause recursion due to it being present at a level higher above. The script is: {0}({1})", relativePath, absolutePath);
+					throw new InvalidOperationException("Including the referenced path would cause recursion due to it being present at a level higher above.");
 				}
 
-				this.AddReference(includePath, null);
-				return false;
+				this.References.Add(absolutePath, relativePath);
 			}
 
-			public void AddReference(string absolutePath, string relativePath)
+			/// <summary>
+			/// Determines whether the specified path exists in the list of files already included.
+			/// </summary>
+			/// <param name="path">The path to check.</param>
+			/// <returns>
+			/// <c>true</c> if the specified path exists in the list of files already included; otherwise, <c>false</c>.
+			/// </returns>
+			/// <exception cref="ArgumentNullException">If the specified <c>path</c> is <c>null</c>.</exception>
+			internal bool IsPathInIncludeChain(string path)
 			{
-				string key = absolutePath.ToLower().Replace("/", "\\").Replace("\\\\", "\\");
-				if (this.References.ContainsKey(key))
-					return;
+				Contract.Requires<ArgumentNullException>(!string.IsNullOrEmpty(path));
 
-				this.References.Add(key, relativePath);
+				bool contains = false;
+				ParseResult container = this;
+				while (container != null)
+				{
+					contains = this.References.Keys.Any(value =>
+						value.Equals(path, StringComparison.InvariantCultureIgnoreCase));
+
+					container = container.Container;
+				}
+
+				return contains;
 			}
 
+
+			/// <summary>
+			/// Gets a value indicatind whether the specified <paramref name="file"/> is referenced by this object.
+			/// </summary>
+			/// <param name="file">The path of the file to check.</param>
+			/// <returns><c>true</c> if the specified <paramref name="file"/> is referenced by this object, <c>false</c> 
+			/// otherwise</returns>
 			public bool ReferencesFile(string file)
 			{
 				return this.References.ContainsKey((file ?? string.Empty).ToLower());
 			}
 		}
 
+
+		/// <summary>
+		/// Represents a previsously cached, fully processed version of a <see cref="CodeFile"/>.
+		/// </summary>
 		protected class CacheEntry
 		{
+			/// <summary>
+			/// True if a cache entry exists
+			/// </summary>
 			public bool Exists;
 
+			/// <summary>
+			/// The last modification date of the cache entry
+			/// </summary>
 			public DateTime LastModified;
 
+			/// <summary>
+			/// The content of the cache entry
+			/// </summary>
 			public string Content;
 
-			public ParseResult ParseResult;
+			/// <summary>
+			/// The path of the cache entry
+			/// </summary>
+			public string Path;
 
-			public CacheEntry(string cacheName)
+			/// <summary>
+			/// Initializes a new instance of the <see cref="CacheEntry"/> class.
+			/// </summary>
+			/// <param name="path">The path of the cache entry.</param>
+			public CacheEntry(string path)
 			{
-				if (File.Exists(cacheName))
+				this.Path = path;
+
+				if (File.Exists(path))
 				{
 					this.Exists = true;
-					this.Content = File.ReadAllText(cacheName, Encoding.UTF8);
-					this.LastModified = Util.GetDateLastModified(cacheName);
+					this.Content = File.ReadAllText(path, Encoding.UTF8);
+					this.LastModified = Util.GetDateLastModified(path);
 				}
 			}
+		}
+
+		internal static bool IsFileExtensionSupported(string extension)
+		{
+			if (fileExtensions == null)
+			{
+				fileExtensions = new List<string>();
+				var types = from t in Assembly.GetExecutingAssembly().GetTypes()
+							where t.IsClass && !t.IsAbstract
+							select t;
+
+				foreach (Type type in types)
+				{
+					var attribs = type.GetCustomAttributes(typeof(ResourceFileAttribute), false);
+					if (attribs.Length != 0)
+					{
+						var resourceAttrib = (ResourceFileAttribute) attribs[0];
+						if (resourceAttrib.ContentType.ContainsAnyOf("text", "application"))
+						{
+							fileExtensions.AddRange(resourceAttrib.Extensions);
+						}
+					}
+				}
+			}
+
+			return fileExtensions.Contains(extension, StringComparer.InvariantCultureIgnoreCase);
 		}
 	}
 }

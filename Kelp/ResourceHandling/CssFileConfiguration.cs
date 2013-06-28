@@ -74,7 +74,7 @@ namespace Kelp.ResourceHandling
 		/// <summary>
 		/// Gets the <see cref="CssSettings"/> associated with this instance.
 		/// </summary>
-		public CssSettings Settings { get; private set; }
+		public CssSettings Settings { get; internal set; }
 
 		/// <inheritdoc/>
 		protected override List<string> BoolProps

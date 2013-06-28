@@ -169,7 +169,8 @@
     <Compile Include="Extensions\XmlNamespaceManagerExtensions.cs" />
     <Compile Include="Imaging\Filters\QueryFilterFactoryAttribute.cs" />
     <Compile Include="ReadOnlyDictionary.cs" />
-    <Compile Include="ResourceHandling\CssLessFile.cs" />
+    <Compile Include="ResourceHandling\ResourceFileAttribute.cs" />
+    <Compile Include="ResourceHandling\LessCssFile.cs" />
     <Compile Include="SyntaxHighlighting\XmlLanguageDefinition.cs" />
     <Compile Include="SyntaxHighlighting\Delimiters.cs" />
     <Compile Include="Util.cs" />
