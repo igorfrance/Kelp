@@ -15,12 +15,8 @@
  */
 namespace Kelp.ResourceHandling
 {
-	using System;
-	using System.Collections.Generic;
 	using System.Configuration;
 	using System.Xml;
-
-	using Microsoft.Ajax.Utilities;
 
 	/// <summary>
 	/// Contains the per-file-extension configuration settings for Kelp.

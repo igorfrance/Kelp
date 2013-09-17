@@ -72,7 +72,7 @@ namespace Kelp.Test
 		/// <summary>
 		/// Gets the CSS style contents.
 		/// </summary>
-		/// <param name="fileName">Name of the CSS style file.</param>
+		/// <param name="fileName">The name of the CSS style file.</param>
 		/// <returns></returns>
 		/// <exception cref="ArgumentNullException">If <paramref name="fileName"/> is <c>null</c>.</exception>
 		/// <exception cref="FileNotFoundException">If <paramref name="fileName"/> doesn't exist in the designated test data 

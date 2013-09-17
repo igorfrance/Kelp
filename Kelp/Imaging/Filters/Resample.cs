@@ -16,8 +16,6 @@
 namespace Kelp.Imaging.Filters
 {
 	using System;
-	using System.Collections.Generic;
-	using System.Diagnostics.Contracts;
 	using System.Drawing;
 	using System.Drawing.Drawing2D;
 
@@ -227,21 +225,6 @@ namespace Kelp.Imaging.Filters
 						else
 							w = CalculateOtherSide(h, source.Height, source.Width);
 					}
-
-					if (this.FitType == ResampleFitType.ToMinimums)
-					{
-						if (h > this.Height && this.Height != 0)
-						{
-							h = this.Height;
-							w = CalculateOtherSide(h, source.Height, source.Width);
-						}
-
-						if (w > this.Width && this.Width != 0)
-						{
-							w = this.Width;
-							h = CalculateOtherSide(w, source.Width, source.Height);
-						}
-					}
 				}
 
 				// create the scaled image
@@ -277,25 +260,25 @@ namespace Kelp.Imaging.Filters
 
 			int.TryParse(param[0], out width);
 
-			string[] b01 = new []{ "0", "1" };
+			string[] zeroAndOne = new []{ "0", "1" };
 
 			if (param.Length > 1)
 				int.TryParse(param[1], out height);
 
-			if (param.Length > 2 && param[2].ContainsAnyOf(b01))
+			if (param.Length > 2 && param[2].ContainsAnyOf(zeroAndOne))
 				preserveRatio = param[2] == "1";
 
-			if (param.Length > 3 && param[3].ContainsAnyOf(b01))
-				dontEnlarge = param[3] == "1";
-
-			if (param.Length > 4 && param[4] != string.Empty)
-			{
-				Enum.TryParse(param[4], out interpolation);
-			}
-
-			if (param.Length > 5 && param[5].ContainsAnyOf(b01))
+			if (param.Length > 3 && param[3] == "1")
 			{
 				fitType = ResampleFitType.ToMinimums;
+			}
+
+			if (param.Length > 4 && param[4].ContainsAnyOf(zeroAndOne))
+				dontEnlarge = param[4] == "1";
+
+			if (param.Length > 5 && param[5] != string.Empty)
+			{
+				Enum.TryParse(param[5], out interpolation);
 			}
 
 			if (width != 0 || height != 0)

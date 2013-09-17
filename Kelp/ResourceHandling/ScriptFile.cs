@@ -15,9 +15,7 @@
  */
 namespace Kelp.ResourceHandling
 {
-	using System;
 	using System.Diagnostics;
-	using System.Diagnostics.Contracts;
 	using System.Text;
 
 	using Kelp.Extensions;

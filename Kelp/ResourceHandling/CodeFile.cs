@@ -230,7 +230,7 @@ namespace Kelp.ResourceHandling
 		/// <param name="relativePath">Optional relative path of the file to load.</param>
 		/// <param name="parent">Optional parent <see cref="CodeFile"/> that is including this <see cref="CodeFile"/></param>
 		/// <returns>The code file matching the specified resource type, optionally loaded with contents from <paramref name="absolutePath"/>.</returns>
-		public static T Create<T>(string absolutePath = null, string relativePath = null, CodeFile parent = null) where T : CodeFile
+		public static T Create<T>(string absolutePath, string relativePath = null, CodeFile parent = null) where T : CodeFile
 		{
 			CodeFile result = (CodeFile) typeof(T).GetConstructor(new Type[] { }).Invoke(new object[] { });
 

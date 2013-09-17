@@ -15,8 +15,6 @@
  */
 namespace Kelp.ResourceHandling
 {
-	using System;
-
 	internal class ImageFileConfiguration
 	{
 	}

@@ -16,9 +16,6 @@
 namespace Kelp.Imaging
 {
 	using System;
-	using System.Collections.Generic;
-	using System.Linq;
-	using System.Text;
 
 	/// <summary>
 	/// Represents an integer range with min and max values

@@ -15,8 +15,6 @@
  */
 namespace Kelp.Imaging.Filters
 {
-	using System;
-
 	/// <summary>
 	/// Matrix based sepia adjusting filter.
 	/// </summary>
