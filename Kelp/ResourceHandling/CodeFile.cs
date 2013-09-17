@@ -223,14 +223,15 @@ namespace Kelp.ResourceHandling
 		}
 
 		/// <summary>
-		/// Returns an instance of <see cref="CodeFile" /> that matches the specified <typeparamref name="T"/>
+		/// Returns an instance of <see cref="CodeFile" /> that matches the specified <typeparamref name="T" />
 		/// </summary>
 		/// <typeparam name="T">The specific type of the code file to create</typeparam>
 		/// <param name="absolutePath">Optional physical path of the file to load into created <see cref="CodeFile" />.</param>
 		/// <param name="relativePath">Optional relative path of the file to load.</param>
-		/// <param name="parent">Optional parent <see cref="CodeFile"/> that is including this <see cref="CodeFile"/></param>
-		/// <returns>The code file matching the specified resource type, optionally loaded with contents from <paramref name="absolutePath"/>.</returns>
-		public static T Create<T>(string absolutePath, string relativePath = null, CodeFile parent = null) where T : CodeFile
+		/// <param name="parent">Optional parent <see cref="CodeFile" /> that is including this <see cref="CodeFile" /></param>
+		/// <param name="configuration">Optional configuration object.</param>
+		/// <returns>The code file matching the specified resource type, optionally loaded with contents from <paramref name="absolutePath" />.</returns>
+		public static T Create<T>(string absolutePath, string relativePath = null, CodeFile parent = null, FileTypeConfiguration configuration = null) where T : CodeFile
 		{
 			CodeFile result = (CodeFile) typeof(T).GetConstructor(new Type[] { }).Invoke(new object[] { });
 
@@ -239,6 +240,11 @@ namespace Kelp.ResourceHandling
 				result.Parent = parent;
 				if (parent.temporaryDirectory != null)
 					result.temporaryDirectory = parent.temporaryDirectory;
+			}
+
+			if (configuration != null)
+			{
+				result.Configuration = configuration;
 			}
 
 			if (!string.IsNullOrEmpty(absolutePath))

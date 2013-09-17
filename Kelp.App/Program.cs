@@ -111,7 +111,7 @@ namespace Kelp.App
 			var fileName = Path.GetFileName(scriptPath);
 
 			var settings = new ScriptFileConfiguration(arguments.Settings);
-			var file = new ScriptFile(scriptPath, fileName, settings);
+			var file = CodeFile.Create<ScriptFile>(scriptPath, fileName, null, settings);
 			for (var i = 1; i < arguments.Files.Count; i++)
 				file.AddFile(Util.MapPath(arguments.Files[i]));
 
@@ -132,7 +132,7 @@ namespace Kelp.App
 			var fileName = Path.GetFileName(stylePath);
 
 			var settings = new CssFileConfiguration(arguments.Settings);
-			var file = new CssFile(stylePath, fileName, settings);
+			var file = CodeFile.Create<CssFile>(stylePath, fileName, null, settings);
 			for (var i = 1; i < arguments.Files.Count; i++)
 				file.AddFile(Util.MapPath(arguments.Files[i]));
 
