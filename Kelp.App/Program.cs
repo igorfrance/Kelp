@@ -73,7 +73,7 @@ namespace Kelp.App
 			{
 				Console.Write(arguments.Help == "options" ? GetOptions() : GetUsage());
 			}
-			else if (args.Length == 0 || arguments.Files.Count == 0)
+			else if (!arguments.Valid)
 			{
 				Console.Write(GetUsage());
 			}
@@ -93,53 +93,32 @@ namespace Kelp.App
 							ProcessImageFile(arguments);
 							break;
 
-						case ResourceType.Style:
-							ProcessStyleFile(arguments);
-							break;
-
-						case ResourceType.Script:
-							ProcessScriptFile(arguments);
+						case ResourceType.CSS:
+						case ResourceType.JavaScript:
+							ProcessCodeFile(arguments);
 							break;
 					}
 				}
 			}
 		}
 
-		static void ProcessScriptFile(Arguments arguments)
+		static void ProcessCodeFile(Arguments arguments)
 		{
-			var scriptPath = Util.MapPath(arguments.Files[0]);
-			var fileName = Path.GetFileName(scriptPath);
+			FileTypeConfiguration settings;
 
-			var settings = new ScriptFileConfiguration(arguments.Settings);
-			var file = CodeFile.Create<ScriptFile>(scriptPath, fileName, null, settings);
-			for (var i = 1; i < arguments.Files.Count; i++)
-				file.AddFile(Util.MapPath(arguments.Files[i]));
-
-			if (!string.IsNullOrEmpty(arguments.Target))
-			{
-				var targetPath = Util.MapPath(arguments.Target);
-				File.WriteAllText(targetPath, file.Content, Encoding.UTF8);
-			}
+			if (arguments.ProcessType == ResourceType.CSS || arguments.ProcessType == ResourceType.LessCSS)
+				settings = new CssFileConfiguration(arguments.Settings);
 			else
-			{
-				Console.Write(file.Content);
-			}
-		}
+				settings = new ScriptFileConfiguration(arguments.Settings);
 
-		static void ProcessStyleFile(Arguments arguments)
-		{
-			var stylePath = Util.MapPath(arguments.Files[0]);
-			var fileName = Path.GetFileName(stylePath);
+			CodeFile file = CodeFile.CreateFromResourceType(arguments.ProcessType, settings);
+			for (var i = 0; i < arguments.Files.Count; i++)
+				file.AddFile(arguments.Files[i]);
 
-			var settings = new CssFileConfiguration(arguments.Settings);
-			var file = CodeFile.Create<CssFile>(stylePath, fileName, null, settings);
-			for (var i = 1; i < arguments.Files.Count; i++)
-				file.AddFile(Util.MapPath(arguments.Files[i]));
-
+			file.CachingEnabled = false;
 			if (!string.IsNullOrEmpty(arguments.Target))
 			{
-				var targetPath = Util.MapPath(arguments.Target);
-				File.WriteAllText(targetPath, file.Content, Encoding.UTF8);
+				File.WriteAllText(arguments.Target, file.Content, Encoding.UTF8);
 			}
 			else
 			{
@@ -183,7 +162,7 @@ namespace Kelp.App
 			result.AppendLine("                              -settings:minifycode=true!outputmode=singleline");
 			result.AppendLine("                        The options that can be used here depend on type of processing that is");
 			result.AppendLine("                        being done; image, script or css processing. Options are not case-sensitive.");
-			result.AppendLine("  -log:<level>          Specifies the amount of logging information to send to console. Possioble");
+			result.AppendLine("  -log:<level>          Specifies the amount of logging information to send to console. Possible");
 			result.AppendLine("                        values are DEBUG|INFO|WARN|ERROR|FATAL|OFF. The default value is OFF.");
 			result.AppendLine("  -help:options         Displays extended information about available processing options");
 
@@ -231,11 +210,22 @@ namespace Kelp.App
 			return result.ToString();
 		}
 
+		static string PrependWorkingDirectoryToPath(string childPath)
+		{
+			if (Path.IsPathRooted(childPath))
+				return childPath;
+
+			return Path.Combine(Environment.CurrentDirectory, childPath);
+		}
+
 		class Arguments
 		{
-			private readonly string[] imageExtensions = new[] { "gif", "png", "bmp", "jpg", "jpeg" };
-			private readonly string[] scriptExtensions = new[] { "js" };
-			private readonly string[] styleExtensions = new[] { "css" };
+			private static readonly string[] imageExtensions = { "gif", "png", "bmp", "jpg", "jpeg" };
+			private static readonly string[] scriptExtensions = { "js" };
+			private static readonly string[] cssExtensions = { "css" };
+			private static readonly string[] lessExtensions = { "less" };
+
+			private bool? valid;
 
 			public Arguments(IEnumerable<string> args)
 			{
@@ -264,11 +254,26 @@ namespace Kelp.App
 					}
 					else if (name == "target")
 					{
-						this.Target = value.Trim('\'', '"');
+						string targetPath = Program.PrependWorkingDirectoryToPath(value.Trim('\'', '"'));
+						FileInfo fileInfo = new FileInfo(targetPath);
+						this.Target = Program.PrependWorkingDirectoryToPath(fileInfo.FullName);
 					}
 					else if (name == "source")
 					{
-						this.Files = new List<string>(Util.SplitArguments(';', value));
+						IEnumerable<string> sources = Util.SplitArguments(';', value);
+						this.Files = new List<string>();
+						foreach (string source in sources)
+						{
+							string sourcePath = Program.PrependWorkingDirectoryToPath(source);
+							FileInfo fileInfo = new FileInfo(sourcePath);
+							if (fileInfo.FullName.Equals(this.Target, StringComparison.InvariantCultureIgnoreCase))
+							{
+								log.ErrorFormat("Input file can't be the same as the output path");
+								this.valid = false;
+								return;
+							}
+							this.Files.Add(fileInfo.FullName);
+						}
 					}
 					else if (name == "help")
 					{
@@ -309,9 +314,11 @@ namespace Kelp.App
 					if (imageExtensions.Contains(ext))
 						type = ResourceType.Image;
 					if (scriptExtensions.Contains(ext))
-						type = ResourceType.Script;
-					if (styleExtensions.Contains(ext))
-						type = ResourceType.Style;
+						type = ResourceType.JavaScript;
+					if (cssExtensions.Contains(ext))
+						type = ResourceType.CSS;
+					if (lessExtensions.Contains(ext))
+						type = ResourceType.LessCSS;
 
 					if (this.ProcessType != type && this.ProcessType != ResourceType.Undefined && type != ResourceType.Undefined)
 					{
@@ -321,6 +328,16 @@ namespace Kelp.App
 					}
 
 					this.ProcessType = type;
+				}
+
+				
+			}
+
+			public bool Valid
+			{
+				get
+				{
+					return valid ?? Files.Count != 0;
 				}
 			}
 
@@ -337,14 +354,6 @@ namespace Kelp.App
 			public Level Logging { get; private set; }
 
 			public ResourceType ProcessType { get; private set; }
-		}
-
-		enum ResourceType
-		{
-			Undefined = 0,
-			Image = 1,
-			Script = 2,
-			Style = 3,
 		}
 	}
 }
