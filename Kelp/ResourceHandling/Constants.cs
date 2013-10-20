@@ -21,19 +21,24 @@ namespace Kelp.ResourceHandling
 	public enum ResourceType
 	{
 		/// <summary>
+		/// Indicates that the value hasn't been defined.
+		/// </summary>
+		Undefined = 0,
+
+		/// <summary>
 		/// Specifies a <c>JavaScript</c> resource.
 		/// </summary>
-		Script = 1,
+		JavaScript = 1,
 
 		/// <summary>
 		/// Specifies a <c>CSS</c> resource.
 		/// </summary>
-		Css,
+		CSS,
 
 		/// <summary>
 		/// Specifies a <c>LESS CSS</c> resource.
 		/// </summary>
-		LessCss,
+		LessCSS,
 
 		/// <summary>
 		/// Specifies an image resource.

@@ -65,9 +65,11 @@ namespace Kelp.Test.ResourceHandling
 			Thread.Sleep(10);
 			File.AppendAllText(scriptPath, testString);
 
-			ScriptFile other = CodeFile.Create<ScriptFile>(new ScriptFileConfiguration { Settings = new CodeSettings {
-				MinifyCode = false
-			}});
+			ScriptFile other = CodeFile.Create<ScriptFile>( 
+				new ScriptFileConfiguration 
+				{ 
+					Settings = new CodeSettings { MinifyCode = false }
+				});
 
 			other.Load(Utilities.GetScriptPath("script1.js"));
 			other.Content.ShouldContain(testString);

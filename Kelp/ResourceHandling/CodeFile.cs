@@ -21,6 +21,7 @@ namespace Kelp.ResourceHandling
 	using System.Diagnostics.Contracts;
 	using System.IO;
 	using System.Linq;
+	using System.Net.NetworkInformation;
 	using System.Reflection;
 	using System.Security.Cryptography;
 	using System.Text;
@@ -53,6 +54,7 @@ namespace Kelp.ResourceHandling
 		protected StringBuilder rawContent = new StringBuilder();
 
 		private string temporaryDirectory;
+		private bool? cachingEnabled;
 
 		private static readonly ILog log = LogManager.GetLogger(typeof(CodeFile).FullName);
 		private static readonly Regex instructionExpression = new Regex(@"^\s*/\*#\s*(?'name'\w+):\s*(?'value'.*?) \*/");
@@ -130,11 +132,6 @@ namespace Kelp.ResourceHandling
 			{
 				return content.ToString();
 			}
-
-			set
-			{
-				this.content = new StringBuilder(value ?? string.Empty);
-			}
 		}
 
 		/// <summary>
@@ -199,6 +196,23 @@ namespace Kelp.ResourceHandling
 		public FileTypeConfiguration Configuration { get; protected set; }
 
 		/// <summary>
+		/// Gets or sets a value indicating whether caching should be enabled for this instance.
+		/// </summary>
+		/// <value><c>true</c> if caching should be enabled; otherwise, <c>false</c>.</value>
+		public bool CachingEnabled
+		{
+			get
+			{
+				return cachingEnabled ?? !string.IsNullOrEmpty(this.TemporaryDirectory);
+			}
+
+			set
+			{
+				this.cachingEnabled = value;
+			}
+		}
+
+		/// <summary>
 		/// The directory to use for caching
 		/// </summary>
 		protected string TemporaryDirectory
@@ -226,12 +240,10 @@ namespace Kelp.ResourceHandling
 		/// Returns an instance of <see cref="CodeFile" /> that matches the specified <typeparamref name="T" />
 		/// </summary>
 		/// <typeparam name="T">The specific type of the code file to create</typeparam>
-		/// <param name="absolutePath">Optional physical path of the file to load into created <see cref="CodeFile" />.</param>
-		/// <param name="relativePath">Optional relative path of the file to load.</param>
-		/// <param name="parent">Optional parent <see cref="CodeFile" /> that is including this <see cref="CodeFile" /></param>
 		/// <param name="configuration">Optional configuration object.</param>
-		/// <returns>The code file matching the specified resource type, optionally loaded with contents from <paramref name="absolutePath" />.</returns>
-		public static T Create<T>(string absolutePath, string relativePath = null, CodeFile parent = null, FileTypeConfiguration configuration = null) where T : CodeFile
+		/// <param name="parent">Optional parent <see cref="CodeFile" /> that is including this <see cref="CodeFile" /></param>
+		/// <returns>The code file matching the specified resource type.</returns>
+		internal static T Create<T>(FileTypeConfiguration configuration = null, CodeFile parent = null) where T : CodeFile
 		{
 			CodeFile result = (CodeFile) typeof(T).GetConstructor(new Type[] { }).Invoke(new object[] { });
 
@@ -247,56 +259,38 @@ namespace Kelp.ResourceHandling
 				result.Configuration = configuration;
 			}
 
-			if (!string.IsNullOrEmpty(absolutePath))
-				result.Load(absolutePath, relativePath);
+			return result as T;
+		}
 
+		internal static T Create<T>(string absolutePath, string relativePath = null, FileTypeConfiguration configuration = null) where T : CodeFile
+		{
+			CodeFile result = (CodeFile) typeof(T).GetConstructor(new Type[] { }).Invoke(new object[] { });
+			if (configuration != null)
+			{
+				result.Configuration = configuration;
+			}
+
+			result.Load(absolutePath, relativePath);
 			return result as T;
 		}
 
 		/// <summary>
-		/// Returns an instance of <see cref="CodeFile" />, loaded with content from <paramref name="absolutePath"/>.
+		/// Returns an instance of <see cref="CodeFile" />, loaded with content from <paramref name="absolutePath" />.
 		/// </summary>
 		/// <param name="absolutePath">The physical path of the file to load into created <see cref="CodeFile" />.</param>
 		/// <param name="relativePath">Optional relative path of the file to load.</param>
-		/// <param name="parent">Optional parent <see cref="CodeFile"/> that is including this <see cref="CodeFile"/></param>
-		/// <returns>A code file appropriate for the specified <paramref name="absolutePath"/>.
-		/// If the extension of the specified <paramref name="absolutePath"/> is <c>css</c>, the resulting value will be a 
-		/// new <see cref="CssFile"/>. In all other cases the resulting value is a <see cref="ScriptFile"/>.</returns>
-		public static CodeFile Create(string absolutePath, string relativePath = null, CodeFile parent = null)
+		/// <param name="parent">Optional parent <see cref="CodeFile" /> that is including this <see cref="CodeFile" /></param>
+		/// <param name="configuration">The configuration to use.</param>
+		/// <returns>A code file appropriate for the specified <paramref name="absolutePath" />.
+		/// If the extension of the specified <paramref name="absolutePath" /> is <c>css</c>, the resulting value will be a
+		/// new <see cref="CssFile" />. In all other cases the resulting value is a <see cref="ScriptFile" />.</returns>
+		public static CodeFile Create(string absolutePath, string relativePath = null, CodeFile parent = null, FileTypeConfiguration configuration = null)
 		{
 			Contract.Requires<ArgumentNullException>(!string.IsNullOrEmpty(absolutePath));
 
-			string extension = Path.GetExtension(absolutePath).Trim('.');
-			if (extension.EndsWith("css"))
-				return CodeFile.Create<CssFile>(absolutePath, relativePath, parent);
-			if (extension.EndsWith("less"))
-				return CodeFile.Create<LessCssFile>(absolutePath, relativePath, parent);
-
-			return CodeFile.Create<ScriptFile>(absolutePath, relativePath, parent);
-		}
-
-		/// <summary>
-		/// Creates the specified absolute path.
-		/// </summary>
-		/// <typeparam name="T"></typeparam>
-		/// <param name="configuration">The configuration.</param>
-		/// <returns>CodeFile.</returns>
-		public static T Create<T>(FileTypeConfiguration configuration) where T : CodeFile
-		{
-			CodeFile result = Create<T>();
-			result.Configuration = configuration;
-			return result as T;
-		}
-
-		/// <summary>
-		/// Creates the specified absolute path.
-		/// </summary>
-		/// <typeparam name="T"></typeparam>
-		/// <returns>CodeFile.</returns>
-		public static T Create<T>() where T : CodeFile
-		{
-			CodeFile result = (CodeFile) typeof(T).GetConstructor(new Type[] { }).Invoke(new object[] { });
-			return result as T;
+			CodeFile result = CreateFromExtension(absolutePath);
+			result.Load(absolutePath, relativePath);
+			return result;
 		}
 
 		/// <summary>
@@ -314,9 +308,45 @@ namespace Kelp.ResourceHandling
 			Contract.Requires<ArgumentNullException>(!string.IsNullOrEmpty(relativePath));
 			Contract.Requires<ArgumentNullException>(!string.IsNullOrEmpty(temporaryDirectory));
 
-			CodeFile result = CodeFile.Create(absolutePath, relativePath);
+			CodeFile result = CreateFromExtension(absolutePath);
 			result.temporaryDirectory = temporaryDirectory;
+			result.Load(absolutePath, relativePath);
+
 			return result;
+		}
+
+		/// <summary>
+		/// Creates a code file matching the specified file name extension
+		/// </summary>
+		/// <param name="path">The name or path of the file name.</param>
+		/// <param name="settings">Optional settings for the created instance.</param>
+		/// <returns>A new instance of <see cref="CodeFile"/>.</returns>
+		public static CodeFile CreateFromExtension(string path, FileTypeConfiguration settings = null)
+		{
+			string extension = Path.GetExtension(path).Trim('.');
+
+			if (extension.EndsWith("css"))
+				return CreateFromResourceType(ResourceType.CSS, settings);
+			if (extension.EndsWith("less"))
+				return CreateFromResourceType(ResourceType.LessCSS, settings);
+
+			return CreateFromResourceType(ResourceType.JavaScript, settings);
+		}
+
+		/// <summary>
+		/// Creates a code file matching the specified resource type.
+		/// </summary>
+		/// <param name="type">The resource type for which to create the instance.</param>
+		/// <param name="settings">Optional settings for the created instance.</param>
+		/// <returns>A new instance of <see cref="CodeFile"/>.</returns>
+		public static CodeFile CreateFromResourceType(ResourceType type, FileTypeConfiguration settings = null)
+		{
+			if (type == ResourceType.LessCSS)
+				return CodeFile.Create<LessCssFile>(settings);
+			if (type == ResourceType.CSS)
+				return CodeFile.Create<LessCssFile>(settings);
+
+			return CodeFile.Create<ScriptFile>(settings);
 		}
 
 		/// <summary>
@@ -445,9 +475,9 @@ namespace Kelp.ResourceHandling
 			foreach (KeyValuePair<string, string> reference in result.References)
 				this.AddReference(reference.Key, reference.Value);
 
-			this.References.Add(this.AbsolutePath, this.RelativePath);
+			this.AddReference(this.AbsolutePath, this.RelativePath);
 
-			this.content = new StringBuilder(this.PostProcess(this.Content));
+			this.content = new StringBuilder(this.PostProcess(this.content.ToString()));
 			this.CacheToTemporaryDirectory();
 		}
 
@@ -566,7 +596,7 @@ namespace Kelp.ResourceHandling
 
 		private void CacheToTemporaryDirectory()
 		{
-			if (this.CacheName == null)
+			if (!this.CachingEnabled)
 				return;
 
 			if (!Directory.Exists(this.TemporaryDirectory))
@@ -703,7 +733,6 @@ namespace Kelp.ResourceHandling
 				return this.References.ContainsKey((file ?? string.Empty).ToLower());
 			}
 		}
-
 
 		/// <summary>
 		/// Represents a previsously cached, fully processed version of a <see cref="CodeFile"/>.

@@ -47,6 +47,9 @@ namespace Kelp.ResourceHandling
 		/// will still be allowed for the files to still be considered equal.
 		/// </summary>
 		public const int MaxDifferenceCachedDate = 2;
+
+		private const byte AttemptCount = 5;
+		private const byte WaitTicks = 100;
 		
 		/// <summary>
 		/// Gets a value indicating whether another request can use the <see cref="T:System.Web.IHttpHandler"/> instance.
@@ -77,17 +80,25 @@ namespace Kelp.ResourceHandling
 
 			if (File.Exists(absolutePath))
 			{
-				if (CodeFile.IsFileExtensionSupported(extension))
+				byte currentAttempt = 0;
+				while (true)
 				{
-					ProcessCodeFileRequest(wrapped);
-				}
-				else if (ImageFile.IsFileExtensionSupported(extension))
-				{
-					ProcessImageFileRequest(wrapped);
-				}
-				else
-				{
-					SendContent(wrapped, absolutePath);
+					try
+					{
+						if (CodeFile.IsFileExtensionSupported(extension))
+							ProcessCodeFileRequest(wrapped);
+						else if (ImageFile.IsFileExtensionSupported(extension))
+							ProcessImageFileRequest(wrapped);
+						else
+							SendContent(wrapped, absolutePath);
+
+						break;
+					}
+					catch (System.IO.IOException)
+					{
+						if (++currentAttempt > AttemptCount)
+							throw;
+					}
 				}
 			}
 			else

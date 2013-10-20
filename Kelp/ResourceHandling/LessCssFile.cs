@@ -11,7 +11,7 @@
 	/// <summary>
 	/// Class CssLessFile
 	/// </summary>
-	[ResourceFile(ResourceType.LessCss, "text/css", "less")]
+	[ResourceFile(ResourceType.LessCSS, "text/css", "less")]
 	public class LessCssFile : CssFile, IPathResolver
 	{
 		/// <inheritdoc/>

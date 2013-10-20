@@ -26,7 +26,7 @@ namespace Kelp.ResourceHandling
 	/// <summary>
 	/// Implements a JS file merger/processor, optionally minifying and obfuscating them.
 	/// </summary>
-	[ResourceFile(ResourceType.Script, "text/javascript", "js")]
+	[ResourceFile(ResourceType.JavaScript, "text/javascript", "js")]
 	public class ScriptFile : CodeFile
 	{
 		private static readonly ILog log = LogManager.GetLogger(typeof(ScriptFile));
@@ -39,7 +39,7 @@ namespace Kelp.ResourceHandling
 			: base(ResourceHandling.Configuration.Current.Script)
 		{
 			this.ContentType = "text/javascript";
-			this.ResourceType = ResourceType.Script;
+			this.ResourceType = ResourceType.JavaScript;
 		}
 
 		/// <inheritdoc/>
