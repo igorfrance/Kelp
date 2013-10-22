@@ -14,6 +14,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{38C401D0-4F97-4E53-9A7A-FB5574A75F15}"
 	ProjectSection(SolutionItems) = preProject
 		kelp.build = kelp.build
+		Kelp.merge.bat = Kelp.merge.bat
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kelp.App", "Kelp.App\Kelp.App.csproj", "{2CEA4138-7E4E-442E-A50C-32F1FAA0E0CF}"

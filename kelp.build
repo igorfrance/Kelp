@@ -8,6 +8,21 @@
 		<msbuild project="${solutionFile}" verbosity="Normal">
 			<property name="Configuration" value="${buildConfiguration}"/>
 		</msbuild>
+		<echo>Merging all dependencies into a single Kelp executable...</echo>
+		<exec program=".nuget\packages\ILRepack.1.22.2\tools\ILRepack.exe">
+			<arg value="/ndebug"/>
+			<arg value="/out:Kelp.App\bin\Kelp.exe"/>
+			<arg value="Kelp.App\bin\Debug\Kelp.App.exe"/>
+			<arg value="Kelp.App\bin\Debug\AForge.dll"/>
+			<arg value="Kelp.App\bin\Debug\AForge.Imaging.dll"/>
+			<arg value="Kelp.App\bin\Debug\AForge.Math.dll"/>
+			<arg value="Kelp.App\bin\Debug\AjaxMin.dll"/>
+			<arg value="Kelp.App\bin\Debug\dotless.Core.dll"/>
+			<arg value="Kelp.App\bin\Debug\Kelp.dll"/>
+			<arg value="Kelp.App\bin\Debug\log4net.dll"/>
+			<arg value="Kelp.App\bin\Debug\Newtonsoft.Json.dll"/>
+		</exec>
+		<echo>Done.</echo>
 	</target>
 	
 </project>
