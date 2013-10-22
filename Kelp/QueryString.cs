@@ -110,9 +110,9 @@ namespace Kelp
 		/// Initializes a new instance of the <see cref="QueryString" /> class, and populates it with
 		/// values parsed the specified <paramref name="queryString" />.
 		/// </summary>
-		/// <param name="splitChars">The character to use to split the key/value pairs.</param>
 		/// <param name="queryString">The query string that contains the name/value pairs to use.</param>
-		public QueryString(char[] splitChars, string queryString)
+		/// <param name="splitChars">The character to use to split the key/value pairs.</param>
+		public QueryString(string queryString, char[] splitChars)
 			: this(splitChars)
 		{
 			if (!string.IsNullOrEmpty(queryString))
