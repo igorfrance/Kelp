@@ -15,7 +15,6 @@
  */
 namespace Kelp.ResourceHandling
 {
-	using System;
 	using System.Configuration;
 	using System.Xml;
 

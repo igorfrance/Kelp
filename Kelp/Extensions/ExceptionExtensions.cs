@@ -16,8 +16,6 @@
 namespace Kelp.Extensions
 {
 	using System;
-	using System.Text.RegularExpressions;
-	using System.Xml;
 
 	/// <summary>
 	/// Provides <see cref="Exception"/> extension methods.

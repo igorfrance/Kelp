@@ -15,7 +15,6 @@
  */
 namespace Kelp.HttpMock
 {
-	using System;
 	using System.Web;
 
 	/// <summary>

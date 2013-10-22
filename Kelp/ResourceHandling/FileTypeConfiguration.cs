@@ -40,6 +40,12 @@ namespace Kelp.ResourceHandling
 		public abstract bool MinificationEnabled { get; set; }
 
 		/// <summary>
+		/// Gets or sets a value indicating whether caching is enabled for this file type.
+		/// </summary>
+		/// <value><c>true</c> if caching is enabled; otherwise, <c>false</c>.</value>
+		public bool CachingEnabled { get; internal set; }
+
+		/// <summary>
 		/// Gets or sets the temporary directory in which to save the processed files.
 		/// </summary>
 		public string TemporaryDirectory

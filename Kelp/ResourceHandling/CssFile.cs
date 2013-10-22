@@ -15,10 +15,7 @@
  */
 namespace Kelp.ResourceHandling
 {
-	using System;
-	using System.Collections.Generic;
 	using System.Diagnostics;
-	using System.Text;
 	using System.Text.RegularExpressions;
 
 	using Kelp.Extensions;
@@ -30,7 +27,7 @@ namespace Kelp.ResourceHandling
 	/// <summary>
 	/// Implements a CSS file merger/processor.
 	/// </summary>
-	[ResourceFile(ResourceType.Css, "text/css", "css")]
+	[ResourceFile(ResourceType.CSS, "text/css", "css")]
 	public class CssFile : CodeFile
 	{
 		private static readonly ILog log = LogManager.GetLogger(typeof(CssFile).FullName);
@@ -45,7 +42,7 @@ namespace Kelp.ResourceHandling
 			: base(ResourceHandling.Configuration.Current.Css)
 		{
 			this.ContentType = "text/css";
-			this.ResourceType = ResourceType.Css;
+			this.ResourceType = ResourceType.CSS;
 		}
 
 		/// <summary>

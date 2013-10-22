@@ -15,7 +15,6 @@
  */
 namespace Kelp.ResourceHandling
 {
-	using System;
 	using System.Drawing.Imaging;
 
 	using Kelp.Imaging;

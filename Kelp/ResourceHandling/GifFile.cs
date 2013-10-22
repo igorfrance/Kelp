@@ -15,10 +15,7 @@
  */
 namespace Kelp.ResourceHandling
 {
-	using System;
-	using System.Collections.Generic;
 	using System.Drawing.Imaging;
-	using System.Linq;
 
 	using Kelp.Imaging;
 

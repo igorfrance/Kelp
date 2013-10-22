@@ -18,7 +18,6 @@ namespace Kelp
 	using System;
 	using System.Collections;
 	using System.Collections.Generic;
-	using System.Diagnostics.Contracts;
 
 	/// <summary>
 	/// Represents a generic collection of key/value pairs that are ordered independently of the key and value.

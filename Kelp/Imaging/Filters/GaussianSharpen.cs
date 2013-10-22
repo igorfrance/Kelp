@@ -15,7 +15,6 @@
  */
 namespace Kelp.Imaging.Filters
 {
-	using System;
 	using System.Drawing;
 
 	using Sharpen = AForge.Imaging.Filters.GaussianSharpen;

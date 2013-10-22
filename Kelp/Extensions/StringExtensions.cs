@@ -151,6 +151,9 @@ namespace Kelp.Extensions
 		/// <returns><c>true</c> if the string contains any one of the supplied values; otherwise <c>false</c>.</returns>
 		public static bool EqualsAnyOf(this string subject, bool caseInSensitive, params string[] values)
 		{
+			if (string.IsNullOrEmpty(subject))
+				return false;
+
 			string compare = !caseInSensitive ? subject : subject.ToLower();
 			foreach (string test in values)
 			{
@@ -218,9 +221,11 @@ namespace Kelp.Extensions
 		/// the specified <paramref name="replacement"/> string.</returns>
 		public static string ReplaceAll(this string subject, string expression, string replacement)
 		{
-			Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(subject));
 			Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(expression));
 			Contract.Requires<ArgumentNullException>(replacement != null);
+
+			if (string.IsNullOrEmpty(subject))
+				return subject;
 
 			return ReplaceAll(subject, new Regex(expression), replacement);
 		}
@@ -236,9 +241,11 @@ namespace Kelp.Extensions
 		/// <paramref name="replacement"/> function to further process the match.</returns>
 		public static string ReplaceAll(this string subject, string expression, MatchEvaluator replacement)
 		{
-			Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(subject));
 			Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(expression));
 			Contract.Requires<ArgumentNullException>(replacement != null);
+
+			if (string.IsNullOrEmpty(subject))
+				return subject;
 
 			return ReplaceAll(subject, new Regex(expression), replacement);
 		}
@@ -254,9 +261,11 @@ namespace Kelp.Extensions
 		/// the specified <paramref name="replacement"/> string.</returns>
 		public static string ReplaceAll(this string subject, Regex expression, string replacement)
 		{
-			Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(subject));
 			Contract.Requires<ArgumentNullException>(expression != null);
 			Contract.Requires<ArgumentNullException>(replacement != null);
+
+			if (string.IsNullOrEmpty(subject))
+				return subject;
 
 			return expression.Replace(subject, replacement);
 		}
@@ -272,9 +281,11 @@ namespace Kelp.Extensions
 		/// <paramref name="replacement"/> function to further process the match.</returns>
 		public static string ReplaceAll(this string subject, Regex expression, MatchEvaluator replacement)
 		{
-			Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(subject));
 			Contract.Requires<ArgumentNullException>(expression != null);
 			Contract.Requires<ArgumentNullException>(replacement != null);
+
+			if (string.IsNullOrEmpty(subject))
+				return subject;
 
 			return expression.Replace(subject, replacement);
 		}
@@ -287,8 +298,10 @@ namespace Kelp.Extensions
 		/// <returns>the specified <paramref name="subject"/> repeated the specified <paramref name="count"/> of times.</returns>
 		public static string Repeat(this string subject, int count)
 		{
-			Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(subject));
 			Contract.Requires<ArgumentNullException>(count > 0);
+
+			if (string.IsNullOrEmpty(subject))
+				return subject;
 
 			if (count == 1)
 				return subject;

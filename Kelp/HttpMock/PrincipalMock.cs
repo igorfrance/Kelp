@@ -15,7 +15,6 @@
  */
 namespace Kelp.HttpMock
 {
-	using System;
 	using System.Linq;
 	using System.Security.Principal;
 
