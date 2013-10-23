@@ -112,10 +112,11 @@ namespace Kelp.App
 				settings = new ScriptFileConfiguration(arguments.Settings);
 
 			CodeFile file = CodeFile.CreateFromResourceType(arguments.ProcessType, settings);
+			file.CachingEnabled = false;
+
 			for (var i = 0; i < arguments.Files.Count; i++)
 				file.AddFile(arguments.Files[i]);
 
-			file.CachingEnabled = false;
 			if (!string.IsNullOrEmpty(arguments.Target))
 			{
 				File.WriteAllText(arguments.Target, file.Content, Encoding.UTF8);
@@ -179,6 +180,7 @@ namespace Kelp.App
 			result.AppendLine("    MacSafariQuirks=true|false (default:true)");
 			result.AppendLine("    ManualRenamesProperties=true|false (default:true)");
 			result.AppendLine("    PreserveFunctionNames=true|false (default:false)");
+			result.AppendLine("    PreserveImportantComments=true|false (default:false)");
 			result.AppendLine("    RemoveFunctionExpressionNames=true|false (default:true)");
 			result.AppendLine("    RemoveUnneededCode=true|false (default:true)");
 			result.AppendLine("    StripDebugStatements=true|false (default:true)");
@@ -250,7 +252,7 @@ namespace Kelp.App
 
 					if (name == "settings")
 					{
-						this.Settings = new QueryString(value);
+						this.Settings = new QueryString(value, '!');
 					}
 					else if (name == "target")
 					{

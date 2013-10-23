@@ -36,6 +36,7 @@ namespace Kelp.ResourceHandling
 			"MacSafariQuirks",
 			"ManualRenamesProperties",
 			"PreserveFunctionNames",
+			"PreserveImportantComments",
 			"RemoveFunctionExpressionNames",
 			"RemoveUnneededCode",
 			"StripDebugStatements",
