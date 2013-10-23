@@ -123,14 +123,14 @@ namespace Kelp.Test.Core
 	{
 		It Separates_pairs_using_ampersand = () => 
 		{
-			var q = new QueryString("A=1&B=2&C=3", new[] { '&' });
+			var q = new QueryString("A=1&B=2&C=3", '&');
 			q.Count.ShouldEqual(3);
 			q["A"].ShouldEqual("1");
 		};
 
 		It Separates_pairs_using_pipe = () =>
 		{
-			var q = new QueryString("A=1|B=2|C=3", new[] { '|' });
+			var q = new QueryString("A=1|B=2|C=3", '|');
 			q.Count.ShouldEqual(3);
 			q["C"].ShouldEqual("3");
 		};

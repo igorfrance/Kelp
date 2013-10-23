@@ -226,17 +226,6 @@ namespace Kelp.ResourceHandling
 		internal string CachedConfigurationSettings { get; private set; }
 
 		/// <summary>
-		/// Gets a value indicating whether minification is enabled for this code file.
-		/// </summary>
-		protected virtual bool MinificationEnabled
-		{
-			get
-			{
-				return false;
-			}
-		}
-
-		/// <summary>
 		/// Returns an instance of <see cref="CodeFile" /> that matches the specified <typeparamref name="T" />
 		/// </summary>
 		/// <typeparam name="T">The specific type of the code file to create</typeparam>
@@ -379,12 +368,15 @@ namespace Kelp.ResourceHandling
 		}
 
 		/// <summary>
-		/// Parses and the content and references of the specified file to this code file.
+		/// Parses and adds the content and references of the specified file to this code file.
 		/// </summary>
 		/// <param name="file">The file to add.</param>
 		public void AddFile(string file)
 		{
-			var inner = CodeFile.Create(file);
+			var inner = CodeFile.CreateFromExtension(file, this.Configuration);
+			inner.CachingEnabled = this.CachingEnabled;
+			inner.Load(file);
+
 			this.content.Append(inner.Content);
 			this.rawContent.Append(inner.RawContent);
 			foreach (string absolutePath in inner.References.Keys)

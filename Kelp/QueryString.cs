@@ -30,10 +30,10 @@ namespace Kelp
 	public class QueryString : NameValueCollection, IXmlConvertible
 	{
 		private const char DefaultKeyValueSeparator = '=';
-		private static readonly char[] DefaultPairSeparators = new[] { '&' };
+		private static readonly char[] DefaultPairSeparators = { '&' };
 
-		private char[] pairSeparators = DefaultPairSeparators;
-		private char keyValueSeparator = DefaultKeyValueSeparator;
+		private readonly char[] pairSeparators = DefaultPairSeparators;
+		private readonly char keyValueSeparator = DefaultKeyValueSeparator;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="QueryString"/> class.
@@ -53,6 +53,18 @@ namespace Kelp
 			if (pairSeparators != null && pairSeparators.Length != 0)
 				this.pairSeparators = pairSeparators;
 
+			this.keyValueSeparator = keyValueSeparator;
+		}
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="QueryString" /> class, using the specified <paramref name="pairSeparator"/>
+		/// and optional <paramref name="keyValueSeparator"/>.
+		/// </summary>
+		/// <param name="pairSeparator">The char to use as key/value pair separator.</param>
+		/// <param name="keyValueSeparator">The character that separates the key from the value.</param>
+		public QueryString(char pairSeparator, char keyValueSeparator = DefaultKeyValueSeparator)
+		{
+			this.pairSeparators = new[] { pairSeparator };
 			this.keyValueSeparator = keyValueSeparator;
 		}
 
@@ -96,7 +108,7 @@ namespace Kelp
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="QueryString"/> class, and populates it with
-		/// values parsed the specified <paramref name="queryString"/>.
+		/// values parsed the specified with <paramref name="queryString"/>.
 		/// </summary>
 		/// <param name="queryString">The query string that contains the name/value pairs to use.</param>
 		public QueryString(string queryString)
@@ -110,9 +122,22 @@ namespace Kelp
 		/// values parsed the specified <paramref name="queryString" />.
 		/// </summary>
 		/// <param name="queryString">The query string that contains the name/value pairs to use.</param>
-		/// <param name="splitChars">The character to use to split the key/value pairs.</param>
+		/// <param name="splitChars">The characters to use to split the key/value pairs.</param>
 		public QueryString(string queryString, char[] splitChars)
 			: this(splitChars)
+		{
+			if (!string.IsNullOrEmpty(queryString))
+				this.Parse(queryString);
+		}
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="QueryString" /> class, and populates it with
+		/// values parsed the specified <paramref name="queryString" />.
+		/// </summary>
+		/// <param name="queryString">The query string that contains the name/value pairs to use.</param>
+		/// <param name="splitChar">The character to use to split the key/value pairs.</param>
+		public QueryString(string queryString, char splitChar)
+			: this(splitChar)
 		{
 			if (!string.IsNullOrEmpty(queryString))
 				this.Parse(queryString);
