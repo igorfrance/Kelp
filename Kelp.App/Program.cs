@@ -227,7 +227,7 @@ namespace Kelp.App
 			private static readonly string[] cssExtensions = { "css" };
 			private static readonly string[] lessExtensions = { "less" };
 
-			private bool? valid;
+			private readonly bool? valid;
 
 			public Arguments(IEnumerable<string> args)
 			{
