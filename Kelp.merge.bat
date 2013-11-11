@@ -9,6 +9,7 @@ if not exist %prog% goto notfound
 
 :done
 echo Done.
+echo Result is Kelp.App\bin\Kelp.exe
 goto end
 
 :notfound
@@ -16,3 +17,4 @@ echo The ILRepack program could not be found.
 goto end
 
 :end
+pause
