@@ -97,11 +97,13 @@ namespace Kelp.Test.ResourceHandling
 	public class When_getting_a_file_with_includes_itself : CodeFileTest
 	{
 		private static string content;
-		private static ScriptFile subject = (ScriptFile)
-				CodeFile.Create(Utilities.GetScriptPath("script3.js"), "script3.js");
 
-		private It Should_throw_an_InvalidOperationException = () =>
-			Catch.Exception(() => content = subject.Content).ShouldBeOfType<InvalidOperationException>();
+		private It Should_throw_an_InvalidOperationException = () => Catch.Exception(delegate {
+			ScriptFile subject = (ScriptFile)
+			CodeFile.Create(Utilities.GetScriptPath("script3.js"), "script3.js");
+			string content = subject.Content;
+		})
+		.ShouldBeOfType<InvalidOperationException>();
 	}
 
 	[Subject(typeof(ScriptFile)), Tags(Categories.ResourceHandling)]

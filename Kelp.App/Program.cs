@@ -64,7 +64,7 @@ namespace Kelp.App
 		}
 
 		[STAThread]
-		static void Main(string[] args)
+		static int Main(string[] args)
 		{
 			var arguments = new Arguments(args);
 			appender.Threshold = arguments.Logging;
@@ -87,19 +87,30 @@ namespace Kelp.App
 				}
 				else
 				{
-					switch (arguments.ProcessType)
+					try
 					{
-						case ResourceType.Image:
-							ProcessImageFile(arguments);
-							break;
+						switch (arguments.ProcessType)
+						{
+							case ResourceType.Image:
+								ProcessImageFile(arguments);
+								break;
 
-						case ResourceType.CSS:
-						case ResourceType.JavaScript:
-							ProcessCodeFile(arguments);
-							break;
+							case ResourceType.CSS:
+							case ResourceType.JavaScript:
+								ProcessCodeFile(arguments);
+								break;
+						}
+
+						return 0;
+					}
+					catch (Exception ex)
+					{
+						log.Error("Failed to process input file(s)", ex);
 					}
 				}
 			}
+
+			return 1;
 		}
 
 		static void ProcessCodeFile(Arguments arguments)
@@ -119,7 +130,15 @@ namespace Kelp.App
 
 			if (!string.IsNullOrEmpty(arguments.Target))
 			{
-				File.WriteAllText(arguments.Target, file.Content, Encoding.UTF8);
+				var ex = EnsureDirectoryExists(arguments.Target);
+				if (ex == null)
+				{
+					File.WriteAllText(arguments.Target, file.Content, Encoding.UTF8);
+				}
+				else
+				{
+					log.Error(string.Format("Error creating output directory for path {0}", arguments.Target), ex);
+				}
 			}
 			else
 			{
@@ -142,6 +161,27 @@ namespace Kelp.App
 			using (Bitmap outputImage = new Bitmap(file.Stream))
 			{
 				outputImage.Save(targetPath);
+			}
+		}
+
+		static Exception EnsureDirectoryExists(string targetPath)
+		{
+			if (string.IsNullOrEmpty(targetPath))
+				return null;
+
+			string directory = Path.GetDirectoryName(targetPath);
+			try
+			{
+				if (!Directory.Exists(directory))
+				{
+					Directory.CreateDirectory(directory);
+				}
+
+				return null;
+			}
+			catch(Exception ex)
+			{
+				return ex;
 			}
 		}
 
