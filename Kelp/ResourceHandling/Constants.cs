@@ -33,7 +33,7 @@ namespace Kelp.ResourceHandling
 		/// <summary>
 		/// Specifies a <c>CSS</c> resource.
 		/// </summary>
-		CSS,
+		CSS = 2,
 
 		/// <summary>
 		/// Specifies a <c>LESS CSS</c> resource.
@@ -44,6 +44,16 @@ namespace Kelp.ResourceHandling
 		/// Specifies an image resource.
 		/// </summary>
 		Image,
+
+		/// <summary>
+		/// Specifies an icon resource.
+		/// </summary>
+		Icon,
+
+		/// <summary>
+		/// Specifies a document resource.
+		/// </summary>
+		Document,
 	}
 
 	/// <summary>
