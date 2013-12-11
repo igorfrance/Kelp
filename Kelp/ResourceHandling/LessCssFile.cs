@@ -9,25 +9,11 @@
 	using dotless.Core.Parser.Tree;
 
 	/// <summary>
-	/// Class CssLessFile
+	/// Represents a LESS CSS file. 
 	/// </summary>
 	[ResourceFile(ResourceType.LessCSS, "text/css", "less")]
 	public class LessCssFile : CssFile, IPathResolver
 	{
-		/// <inheritdoc/>
-		protected override string PostProcess(string sourceCode)
-		{
-			Parser parser = new Parser();
-
-			((FileReader) ((Importer) parser.Importer).FileReader).PathResolver = this;
-
-			Ruleset result = parser.Parse(sourceCode, this.AbsolutePath);
-
-			Env env = new Env();
-			sourceCode = result.ToCSS(env);
-			return base.PostProcess(sourceCode);
-		}
-
 		/// <summary>
 		/// Gets the full path.
 		/// </summary>
@@ -45,6 +31,20 @@
 			}
 
 			return Path.Combine(new FileInfo(this.AbsolutePath).DirectoryName, path);
+		}
+
+		/// <inheritdoc/>
+		protected override string PostProcess(string sourceCode)
+		{
+			Parser parser = new Parser();
+
+			((FileReader) ((Importer) parser.Importer).FileReader).PathResolver = this;
+
+			Ruleset result = parser.Parse(sourceCode, this.AbsolutePath);
+
+			Env env = new Env();
+			sourceCode = result.ToCSS(env);
+			return base.PostProcess(sourceCode);
 		}
 	}
 }

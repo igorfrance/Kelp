@@ -220,12 +220,6 @@ namespace Kelp.ResourceHandling
 			return instance;
 		}
 
-		internal static bool IsFileExtensionSupported2(string extension)
-		{
-			Contract.Requires<ArgumentNullException>(!string.IsNullOrEmpty(extension));
-			return extension.Replace(".", string.Empty).ToLower().ContainsAnyOf(extensions.ToArray());
-		}
-
 		private byte[] Load()
 		{
 			bool useCache = false;
@@ -270,19 +264,25 @@ namespace Kelp.ResourceHandling
 		{
 			if (extensions == null)
 			{
-				extensions = new List<string>();
-				var types = from t in Assembly.GetExecutingAssembly().GetTypes()
-							where t.IsClass && !t.IsAbstract
-							select t;
-
-				foreach (Type type in types)
+				lock (log)
 				{
-					var attribs = type.GetCustomAttributes(typeof(ResourceFileAttribute), false);
-					if (attribs.Length != 0)
+					if (extensions == null)
 					{
-						var resourceAttrib = (ResourceFileAttribute) attribs[0];
-						if (resourceAttrib.ContentType.ContainsAnyOf("image"))
-							extensions.AddRange(resourceAttrib.Extensions);
+						extensions = new List<string>();
+						var types = from t in Assembly.GetExecutingAssembly().GetTypes()
+									where t.IsClass && !t.IsAbstract
+									select t;
+
+						foreach (Type type in types)
+						{
+							var attribs = type.GetCustomAttributes(typeof(ResourceFileAttribute), false);
+							if (attribs.Length != 0)
+							{
+								var resourceAttrib = (ResourceFileAttribute) attribs[0];
+								if (resourceAttrib.ContentType.ContainsAnyOf("image"))
+									extensions.AddRange(resourceAttrib.Extensions);
+							}
+						}
 					}
 				}
 			}

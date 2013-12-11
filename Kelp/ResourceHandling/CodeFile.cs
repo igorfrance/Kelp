@@ -17,11 +17,9 @@ namespace Kelp.ResourceHandling
 {
 	using System;
 	using System.Collections.Generic;
-	using System.Diagnostics;
 	using System.Diagnostics.Contracts;
 	using System.IO;
 	using System.Linq;
-	using System.Net.NetworkInformation;
 	using System.Reflection;
 	using System.Security.Cryptography;
 	using System.Text;
@@ -38,12 +36,6 @@ namespace Kelp.ResourceHandling
 	public abstract class CodeFile
 	{
 		/// <summary>
-		/// A reference to the including (parent) <see cref="CodeFile"/> class, if this file 
-		/// was included from another.
-		/// </summary>
-		protected CodeFile Parent { get; private set; }
-		
-		/// <summary>
 		/// The file's fully processed source code.
 		/// </summary>
 		protected StringBuilder content = new StringBuilder();
@@ -52,13 +44,14 @@ namespace Kelp.ResourceHandling
 		/// The file's unprocessed source code.
 		/// </summary>
 		protected StringBuilder rawContent = new StringBuilder();
-
-		private string temporaryDirectory;
-		private bool? cachingEnabled;
-
+		
 		private static readonly ILog log = LogManager.GetLogger(typeof(CodeFile).FullName);
 		private static readonly Regex instructionExpression = new Regex(@"^\s*/\*#\s*(?'name'\w+):\s*(?'value'.*?) \*/");
 		private static List<string> fileExtensions;
+
+		private string temporaryDirectory;
+		private bool? cachingEnabled;
+		private string extensions;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CodeFile"/> class.
@@ -166,6 +159,28 @@ namespace Kelp.ResourceHandling
 		}
 
 		/// <summary>
+		/// Gets the configuration associated with this <see refe="CodeFile"/>'s file type.
+		/// </summary>
+		public FileTypeConfiguration Configuration { get; protected set; }
+
+		/// <summary>
+		/// Gets or sets a value indicating whether caching should be enabled for this instance.
+		/// </summary>
+		/// <value><c>true</c> if caching should be enabled; otherwise, <c>false</c>.</value>
+		public bool CachingEnabled
+		{
+			get
+			{
+				return cachingEnabled ?? !string.IsNullOrEmpty(this.TemporaryDirectory);
+			}
+
+			set
+			{
+				this.cachingEnabled = value;
+			}
+		}
+
+		/// <summary>
 		/// Gets the full name of the temporary file where the processed version of this file will be saved.
 		/// </summary>
 		/// <remarks>
@@ -190,27 +205,35 @@ namespace Kelp.ResourceHandling
 
 		internal ResourceType ResourceType { get; set; }
 
-		/// <summary>
-		/// Gets the configuration associated with this <see refe="CodeFile"/>'s file type.
-		/// </summary>
-		public FileTypeConfiguration Configuration { get; protected set; }
-
-		/// <summary>
-		/// Gets or sets a value indicating whether caching should be enabled for this instance.
-		/// </summary>
-		/// <value><c>true</c> if caching should be enabled; otherwise, <c>false</c>.</value>
-		public bool CachingEnabled
+		internal string ExtensionSearchFilter
 		{
 			get
 			{
-				return cachingEnabled ?? !string.IsNullOrEmpty(this.TemporaryDirectory);
-			}
+				if (this.extensions == null)
+				{
+					var attribs = this.GetType().GetCustomAttributes(typeof(ResourceFileAttribute), true);
+					if (attribs.Length != 0)
+					{
+						var resourceAttrib = (ResourceFileAttribute) attribs[0];
+						var extensionList = new List<string>();
+						foreach (string extension in resourceAttrib.Extensions)
+						{
+							extensionList.Add("*." + extension);
+						}
 
-			set
-			{
-				this.cachingEnabled = value;
+						extensions = string.Join(";", extensionList);
+					}
+					else
+					{
+						extensions = "*.*";
+					}
+				}
+
+				return extensions;
 			}
 		}
+
+		internal string CachedConfigurationSettings { get; private set; }
 
 		/// <summary>
 		/// The directory to use for caching
@@ -223,44 +246,33 @@ namespace Kelp.ResourceHandling
 			}
 		}
 
-		internal string CachedConfigurationSettings { get; private set; }
+		/// <summary>
+		/// A reference to the including (parent) <see cref="CodeFile"/> class, if this file 
+		/// was included from another.
+		/// </summary>
+		protected CodeFile Parent { get; private set; }
 
 		/// <summary>
-		/// Returns an instance of <see cref="CodeFile" /> that matches the specified <typeparamref name="T" />
+		/// Gets an E-tag for the specified <paramref name="fileName"/> and <paramref name="lastModified"/> date.
 		/// </summary>
-		/// <typeparam name="T">The specific type of the code file to create</typeparam>
-		/// <param name="configuration">Optional configuration object.</param>
-		/// <param name="parent">Optional parent <see cref="CodeFile" /> that is including this <see cref="CodeFile" /></param>
-		/// <returns>The code file matching the specified resource type.</returns>
-		internal static T Create<T>(FileTypeConfiguration configuration = null, CodeFile parent = null) where T : CodeFile
+		/// <param name="fileName">Name of the file.</param>
+		/// <param name="lastModified">The last modified date of the file.</param>
+		/// <returns>The E-Tag that matches the specified <paramref name="fileName"/> and <paramref name="lastModified"/> date.</returns>
+		public static string GetETag(string fileName, DateTime lastModified)
 		{
-			CodeFile result = (CodeFile) typeof(T).GetConstructor(new Type[] { }).Invoke(new object[] { });
+			Contract.Requires<ArgumentNullException>(!string.IsNullOrEmpty(fileName));
 
-			if (parent != null)
-			{
-				result.Parent = parent;
-				if (parent.temporaryDirectory != null)
-					result.temporaryDirectory = parent.temporaryDirectory;
-			}
+			Encoder stringEncoder = Encoding.UTF8.GetEncoder();
+			MD5CryptoServiceProvider md5 = new MD5CryptoServiceProvider();
 
-			if (configuration != null)
-			{
-				result.Configuration = configuration;
-			}
+			string fileString = fileName + lastModified +
+				Assembly.GetExecutingAssembly().GetName().Version;
 
-			return result as T;
-		}
+			// get string bytes
+			byte[] bytes = new byte[stringEncoder.GetByteCount(fileString.ToCharArray(), 0, fileString.Length, true)];
+			stringEncoder.GetBytes(fileString.ToCharArray(), 0, fileString.Length, bytes, 0, true);
 
-		internal static T Create<T>(string absolutePath, string relativePath = null, FileTypeConfiguration configuration = null) where T : CodeFile
-		{
-			CodeFile result = (CodeFile) typeof(T).GetConstructor(new Type[] { }).Invoke(new object[] { });
-			if (configuration != null)
-			{
-				result.Configuration = configuration;
-			}
-
-			result.Load(absolutePath, relativePath);
-			return result as T;
+			return BitConverter.ToString(md5.ComputeHash(bytes)).Replace("-", string.Empty).ToLower();
 		}
 
 		/// <summary>
@@ -338,29 +350,6 @@ namespace Kelp.ResourceHandling
 			return CodeFile.Create<ScriptFile>(settings);
 		}
 
-		/// <summary>
-		/// Gets an E-tag for the specified <paramref name="fileName"/> and <paramref name="lastModified"/> date.
-		/// </summary>
-		/// <param name="fileName">Name of the file.</param>
-		/// <param name="lastModified">The last modified date of the file.</param>
-		/// <returns>The E-Tag that matches the specified <paramref name="fileName"/> and <paramref name="lastModified"/> date.</returns>
-		public static string GetETag(string fileName, DateTime lastModified)
-		{
-			Contract.Requires<ArgumentNullException>(!string.IsNullOrEmpty(fileName));
-
-			Encoder stringEncoder = Encoding.UTF8.GetEncoder();
-			MD5CryptoServiceProvider md5 = new MD5CryptoServiceProvider();
-
-			string fileString = fileName + lastModified +
-				Assembly.GetExecutingAssembly().GetName().Version;
-
-			// get string bytes
-			byte[] bytes = new byte[stringEncoder.GetByteCount(fileString.ToCharArray(), 0, fileString.Length, true)];
-			stringEncoder.GetBytes(fileString.ToCharArray(), 0, fileString.Length, bytes, 0, true);
-
-			return BitConverter.ToString(md5.ComputeHash(bytes)).Replace("-", string.Empty).ToLower();
-		}
-
 		/// <inheritdoc/>
 		public override string ToString()
 		{
@@ -381,6 +370,120 @@ namespace Kelp.ResourceHandling
 			this.rawContent.Append(inner.RawContent);
 			foreach (string absolutePath in inner.References.Keys)
 				this.AddReference(absolutePath, inner.References[absolutePath]);
+		}
+
+		/// <summary>
+		/// Loads the file, either from cache or from its <see cref="AbsolutePath"/>.
+		/// </summary>
+		public virtual void Load(string absolutePath, string relativePath = null)
+		{
+			Contract.Requires<ArgumentNullException>(!string.IsNullOrEmpty(absolutePath));
+			Contract.Requires<FileNotFoundException>(File.Exists(absolutePath));
+
+			this.AbsolutePath = absolutePath;
+			this.RelativePath = relativePath ?? Path.GetFileName(absolutePath);
+			if (this.Parent != null)
+			{
+				this.RelativePath = Path.Combine(Path.GetDirectoryName(Parent.RelativePath), this.RelativePath);
+			}
+
+			var cacheEntry = new CacheEntry(this.CacheName);
+			bool needsRefresh = this.NeedsRefresh(cacheEntry);
+			ParseResult result;
+
+			if (needsRefresh)
+			{
+				var sourceCode = File.ReadAllText(absolutePath, Encoding.UTF8);
+				result = this.Parse(sourceCode);
+			}
+			else
+			{
+				result = this.Parse(cacheEntry.Content);
+			}
+
+			this.content = new StringBuilder(result.Content.ToString());
+			this.rawContent = new StringBuilder(result.RawContent);
+
+			this.References.Clear();
+			foreach (KeyValuePair<string, string> reference in result.References)
+				this.AddReference(reference.Key, reference.Value);
+
+			this.AddReference(this.AbsolutePath, this.RelativePath);
+
+			this.content = new StringBuilder(this.PostProcess(this.content.ToString()));
+
+			if (needsRefresh)
+				this.CacheToTemporaryDirectory();
+		}
+
+		/// <summary>
+		/// Returns an instance of <see cref="CodeFile" /> that matches the specified <typeparamref name="T" />
+		/// </summary>
+		/// <typeparam name="T">The specific type of the code file to create</typeparam>
+		/// <param name="configuration">Optional configuration object.</param>
+		/// <param name="parent">Optional parent <see cref="CodeFile" /> that is including this <see cref="CodeFile" /></param>
+		/// <returns>The code file matching the specified resource type.</returns>
+		internal static T Create<T>(FileTypeConfiguration configuration = null, CodeFile parent = null) where T : CodeFile
+		{
+			CodeFile result = (CodeFile) typeof(T).GetConstructor(new Type[] { }).Invoke(new object[] { });
+
+			if (parent != null)
+			{
+				result.Parent = parent;
+				if (parent.temporaryDirectory != null)
+					result.temporaryDirectory = parent.temporaryDirectory;
+			}
+
+			if (configuration != null)
+			{
+				result.Configuration = configuration;
+			}
+
+			return result as T;
+		}
+
+		internal static T Create<T>(string absolutePath, string relativePath = null, FileTypeConfiguration configuration = null) where T : CodeFile
+		{
+			CodeFile result = (CodeFile) typeof(T).GetConstructor(new Type[] { }).Invoke(new object[] { });
+			if (configuration != null)
+			{
+				result.Configuration = configuration;
+			}
+
+			result.Load(absolutePath, relativePath);
+			return result as T;
+		}
+
+		internal static bool IsFileExtensionSupported(string extension)
+		{
+			if (fileExtensions == null)
+			{
+				lock (log)
+				{
+					if (fileExtensions == null)
+					{
+						fileExtensions = new List<string>();
+						var types = from t in Assembly.GetExecutingAssembly().GetTypes()
+									where t.IsClass && !t.IsAbstract
+									select t;
+
+						foreach (Type type in types)
+						{
+							var attribs = type.GetCustomAttributes(typeof(ResourceFileAttribute), false);
+							if (attribs.Length != 0)
+							{
+								var resourceAttrib = (ResourceFileAttribute) attribs[0];
+								if (resourceAttrib.ContentType.ContainsAnyOf("text", "application"))
+								{
+									fileExtensions.AddRange(resourceAttrib.Extensions);
+								}
+							}
+						}
+					}
+				}
+			}
+
+			return fileExtensions.Contains(extension, StringComparer.InvariantCultureIgnoreCase);
 		}
 
 		/// <summary>
@@ -433,47 +536,6 @@ namespace Kelp.ResourceHandling
 		}
 
 		/// <summary>
-		/// Loads the file, either from cache or from its <see cref="AbsolutePath"/>.
-		/// </summary>
-		public virtual void Load(string absolutePath, string relativePath = null)
-		{
-			Contract.Requires<ArgumentNullException>(!string.IsNullOrEmpty(absolutePath));
-			Contract.Requires<FileNotFoundException>(File.Exists(absolutePath));
-
-			this.AbsolutePath = absolutePath;
-			this.RelativePath = relativePath ?? Path.GetFileName(absolutePath);
-			if (this.Parent != null)
-			{
-				this.RelativePath = Path.Combine(Path.GetDirectoryName(Parent.RelativePath), this.RelativePath);
-			}
-
-			var cacheEntry = new CacheEntry(this.CacheName);
-			ParseResult result;
-
-			if (this.NeedsRefresh(cacheEntry))
-			{
-				var sourceCode = File.ReadAllText(absolutePath, Encoding.UTF8);
-				result = this.Parse(sourceCode);
-			}
-			else
-			{
-				result = this.Parse(cacheEntry.Content);
-			}
-
-			this.content = new StringBuilder(result.Content.ToString());
-			this.rawContent = new StringBuilder(result.RawContent);
-
-			this.References.Clear();
-			foreach (KeyValuePair<string, string> reference in result.References)
-				this.AddReference(reference.Key, reference.Value);
-
-			this.AddReference(this.AbsolutePath, this.RelativePath);
-
-			this.content = new StringBuilder(this.PostProcess(this.content.ToString()));
-			this.CacheToTemporaryDirectory();
-		}
-
-		/// <summary>
 		/// Scans through the specified source code and processes it line by line.
 		/// </summary>
 		/// <param name="sourceCode">The source code to parse.</param>
@@ -506,7 +568,9 @@ namespace Kelp.ResourceHandling
 						case "reference":
 							string[] parts = value.Split('|');
 							if (parts.Length == 2)
+							{
 								result.AddReference(parts[0].Trim(), parts[1].Trim());
+							}
 
 							break;
 
@@ -522,7 +586,29 @@ namespace Kelp.ResourceHandling
 								includePath = Path.Combine(directory, Regex.Replace(value, @"\?.*$", string.Empty));
 							}
 
-							if (File.Exists(includePath))
+							if (Path.GetFileName(includePath).StartsWith("*"))
+							{
+								var directory = Path.GetDirectoryName(includePath);
+								if (Directory.Exists(directory))
+								{
+									var includedFiles = Directory.GetFiles(directory, this.ExtensionSearchFilter, 
+										SearchOption.AllDirectories);
+
+									foreach (string includedFile in includedFiles)
+									{
+										var includeContent = File.ReadAllText(includedFile, Encoding.UTF8);
+										var inner = this.Parse(includeContent, result, includePath, value);
+										result.Content.Append(inner.Content);
+									}
+
+									result.AddReference(includePath, value);
+								}
+								else
+								{
+									result.Content.AppendLine(line + "/* Directory not found */");
+								}
+							}
+							else if (File.Exists(includePath))
 							{
 								if (includePath.Equals(absolutePath, StringComparison.InvariantCultureIgnoreCase))
 								{
@@ -566,12 +652,21 @@ namespace Kelp.ResourceHandling
 			var parsed = this.Parse(cacheEntry.Content);
 			foreach (string referencePath in parsed.References.Keys)
 			{
-				if (!File.Exists(referencePath))
-					return true;
+				if (Path.GetFileName(referencePath).StartsWith("*"))
+				{
+					var directory = Path.GetDirectoryName(referencePath);
+					if (Directory.GetLastWriteTime(directory) > cacheEntry.LastModified)
+						return true;
+				}
+				else
+				{
+					if (!File.Exists(referencePath))
+						return true;
 
-				var referenceModified = Util.GetDateLastModified(referencePath);
-				if (referenceModified > cacheEntry.LastModified)
-					return true;
+					var referenceModified = Util.GetDateLastModified(referencePath);
+					if (referenceModified > cacheEntry.LastModified)
+						return true;
+				}
 			}
 
 			return false;
@@ -610,7 +705,6 @@ namespace Kelp.ResourceHandling
 				foreach (string includePath in this.References.Keys)
 					persistContent.AppendLine(string.Format("/*# Reference: {0} | {1} */", includePath, this.References[includePath]));
 
-				persistContent.AppendLine();
 				persistContent.Append(this.content);
 
 				File.WriteAllText(this.CacheName, persistContent.ToString(), Encoding.UTF8);
@@ -689,6 +783,17 @@ namespace Kelp.ResourceHandling
 			}
 
 			/// <summary>
+			/// Gets a value indicating whether the specified <paramref name="file"/> is referenced by this object.
+			/// </summary>
+			/// <param name="file">The path of the file to check.</param>
+			/// <returns><c>true</c> if the specified <paramref name="file"/> is referenced by this object, <c>false</c> 
+			/// otherwise</returns>
+			public bool ReferencesFile(string file)
+			{
+				return this.References.ContainsKey((file ?? string.Empty).ToLower());
+			}
+
+			/// <summary>
 			/// Determines whether the specified path exists in the list of files already included.
 			/// </summary>
 			/// <param name="path">The path to check.</param>
@@ -712,22 +817,10 @@ namespace Kelp.ResourceHandling
 
 				return contains;
 			}
-
-
-			/// <summary>
-			/// Gets a value indicatind whether the specified <paramref name="file"/> is referenced by this object.
-			/// </summary>
-			/// <param name="file">The path of the file to check.</param>
-			/// <returns><c>true</c> if the specified <paramref name="file"/> is referenced by this object, <c>false</c> 
-			/// otherwise</returns>
-			public bool ReferencesFile(string file)
-			{
-				return this.References.ContainsKey((file ?? string.Empty).ToLower());
-			}
 		}
 
 		/// <summary>
-		/// Represents a previsously cached, fully processed version of a <see cref="CodeFile"/>.
+		/// Represents a previously cached, fully processed version of a <see cref="CodeFile"/>.
 		/// </summary>
 		protected class CacheEntry
 		{
@@ -766,32 +859,6 @@ namespace Kelp.ResourceHandling
 					this.LastModified = Util.GetDateLastModified(path);
 				}
 			}
-		}
-
-		internal static bool IsFileExtensionSupported(string extension)
-		{
-			if (fileExtensions == null)
-			{
-				fileExtensions = new List<string>();
-				var types = from t in Assembly.GetExecutingAssembly().GetTypes()
-							where t.IsClass && !t.IsAbstract
-							select t;
-
-				foreach (Type type in types)
-				{
-					var attribs = type.GetCustomAttributes(typeof(ResourceFileAttribute), false);
-					if (attribs.Length != 0)
-					{
-						var resourceAttrib = (ResourceFileAttribute) attribs[0];
-						if (resourceAttrib.ContentType.ContainsAnyOf("text", "application"))
-						{
-							fileExtensions.AddRange(resourceAttrib.Extensions);
-						}
-					}
-				}
-			}
-
-			return fileExtensions.Contains(extension, StringComparer.InvariantCultureIgnoreCase);
 		}
 	}
 }
