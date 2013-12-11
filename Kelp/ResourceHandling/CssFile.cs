@@ -96,7 +96,7 @@ namespace Kelp.ResourceHandling
 				return sourceCode;
 
 			var fileFolder = relativePath.Contains("/")
-				? this.RelativePath.Substring(0, relativePath.LastIndexOf("/") + 1)
+				? relativePath.Substring(0, relativePath.LastIndexOf("/") + 1)
 				: string.Empty;
 
 			var processed = rxpReferencePath.Replace(sourceCode, delegate(Match m)
