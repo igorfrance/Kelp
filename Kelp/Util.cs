@@ -243,5 +243,76 @@ namespace Kelp
 
 			return result;
 		}
+
+		/// <summary>
+		/// Searches the specified <paramref name="path"/> for assemblies that have the same short name but
+		/// different long name.
+		/// </summary>
+		/// <param name="path">The path to investigate.</param>
+		/// <returns>Duplicate references, grouped by the short name.</returns>
+		public static IEnumerable<IGrouping<string, Reference>> FindConflictingReferences(string path)
+		{
+			var assemblies = Util.GetAssemblies(path);
+			var references = Util.FindReferences(assemblies);
+
+			return from reference in references
+				   group reference by reference.ReferencedAssembly.Name
+					   into referenceGroup
+					   where referenceGroup.ToList().Select(reference => reference.ReferencedAssembly.FullName).Distinct().Count() > 1
+					   select referenceGroup;
+		}
+
+		/// <summary>
+		/// Gets a list of all assembly references found in the specified assemblies.
+		/// </summary>
+		/// <param name="assemblies">The assemblies to scan.</param>
+		/// <returns>A list of all assembly references found in the specified assemblies..</returns>
+		public static List<Reference> FindReferences(List<Assembly> assemblies)
+		{
+			var references = new List<Reference>();
+			foreach (var assembly in assemblies)
+			{
+				foreach (var referencedAssembly in assembly.GetReferencedAssemblies())
+				{
+					references.Add(new Reference
+					{
+						Assembly = assembly.GetName(),
+						ReferencedAssembly = referencedAssembly
+					});
+				}
+			}
+
+			return references;
+		}
+
+		/// <summary>
+		/// Gets a list of all assemblies (both <c>dll</c> and <c>exe</c>) in the specified path.
+		/// </summary>
+		/// <param name="path">The path to scan for assemblies.</param>
+		/// <returns>The list of all assemblies found in the specified path.</returns>
+		public static List<Assembly> GetAssemblies(string path)
+		{
+			var files = new List<FileInfo>();
+			var directoryToSearch = new DirectoryInfo(path);
+			files.AddRange(directoryToSearch.GetFiles("*.dll", SearchOption.AllDirectories));
+			files.AddRange(directoryToSearch.GetFiles("*.exe", SearchOption.AllDirectories));
+			return files.ConvertAll(file => Assembly.LoadFile(file.FullName));
+		}
+
+		/// <summary>
+		/// Represents an assembly reference.
+		/// </summary>
+		public class Reference
+		{
+			/// <summary>
+			/// Gets the name of the assembly.
+			/// </summary>
+			public AssemblyName Assembly { get; internal set; }
+
+			/// <summary>
+			/// Gets the name of the referenced assembly.
+			/// </summary>
+			public AssemblyName ReferencedAssembly { get; internal set; }
+		}
 	}
 }
