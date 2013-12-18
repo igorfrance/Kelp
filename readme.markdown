@@ -1,4 +1,4 @@
-<img src="https://raw.github.com/igorfrance/kelp/master/Kelp.App/kelp.png" alt="Kelp" align="right" width="176"/>
+<img src="https://raw.github.com/igorfrance/kelp/master/Kelp.App/Resources/kelp.png" alt="Kelp" align="right" width="176"/>
 Kelp is a base library of common utilities for use with .NET web applications. It consists of a set of frequently used extension methods, HTTP mock objects, and resource processing utilities.
 
 Image processing is a provided by AForge; Kelp provides a wrapper that manipoulates image requested through HTTP by specifiying the appropriate query string parameters.
