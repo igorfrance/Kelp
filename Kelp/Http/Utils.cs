@@ -19,6 +19,7 @@ namespace Kelp.Http
 	using System.Collections.Generic;
 	using System.IO;
 	using System.Net;
+	using System.Reflection;
 	using System.Web;
 
 	/// <summary>
@@ -31,6 +32,32 @@ namespace Kelp.Http
 		/// will still be allowed for the files to still be considered equal.
 		/// </summary>
 		public const int MaxDifferenceCachedDate = 2;
+
+		private static readonly object temp = new object();
+		private static MethodInfo getMimeMapping;
+
+		private static MethodInfo GetMimeMapping
+		{
+			get
+			{
+				if (getMimeMapping == null)
+				{
+					Type mimeMappingType = Assembly.GetAssembly(typeof(HttpRuntime)).GetType("System.Web.MimeMapping");
+					if (mimeMappingType == null)
+						throw new SystemException("Couldnt find MimeMapping type");
+
+					getMimeMapping = mimeMappingType.GetMethod("GetMimeMapping", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+					if (getMimeMapping == null)
+						throw new SystemException("Couldnt find GetMimeMapping method");
+					if (getMimeMapping.ReturnType != typeof(string))
+						throw new SystemException("GetMimeMapping method has invalid return type");
+					if (getMimeMapping.GetParameters().Length != 1 && getMimeMapping.GetParameters()[0].ParameterType != typeof(string))
+						throw new SystemException("GetMimeMapping method has invalid parameters");
+				}
+
+				return getMimeMapping;
+			}
+		}
 
 		/// <summary>
 		/// Determines whether the specified <paramref name="context"/> represents a no-cache request.
@@ -75,7 +102,7 @@ namespace Kelp.Http
 		}
 
 		/// <summary>
-		/// Sends the not-modified status header to the responnse.
+		/// Sends the not-modified status header to the response.
 		/// </summary>
 		/// <param name="context">The HTTP context that contains the request.</param>
 		public static void SendNotModified(HttpContextBase context)
@@ -96,12 +123,22 @@ namespace Kelp.Http
 		}
 
 		/// <summary>
+		/// Gets the mime type for the specified <paramref name="filename"/>.
+		/// </summary>
+		/// <param name="filename">The filename whose mime-type to get.</param>
+		/// <returns>The mime type for the specified <paramref name="filename"/></returns>
+		public static string GetMimeType(string filename)
+		{
+			return (string) GetMimeMapping.Invoke(temp, new object[] { filename });
+		}
+
+		/// <summary>
 		/// Gets the last modification date of the specified <paramref name="filePath"/>.
 		/// </summary>
 		/// <param name="filePath">The file path.</param>
 		/// <returns>the last modification date of the specified file</returns>
 		/// <remarks>
-		/// The greaer of the <em>LastWriteTime</em> and <em>CreationTime</em> associated with the request.
+		/// The greater of the <em>LastWriteTime</em> and <em>CreationTime</em> associated with the request.
 		/// </remarks>
 		public static DateTime GetDateLastModified(string filePath)
 		{

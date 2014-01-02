@@ -20,7 +20,9 @@ namespace Kelp.ResourceHandling
 	using System.IO;
 	using System.Web;
 
-	using Kelp.Http;
+	using log4net;
+
+	using Util = Kelp.Http.Util;
 
 	/// <summary>
 	/// Implements an <see cref="IHttpHandler"/> for handling image, script and CSS requests.
@@ -49,8 +51,8 @@ namespace Kelp.ResourceHandling
 		public const int MaxDifferenceCachedDate = 2;
 
 		private const byte AttemptCount = 5;
-		private const byte WaitTicks = 100;
-		
+		private static readonly ILog log = LogManager.GetLogger(typeof(ResourceHandler).FullName);
+
 		/// <summary>
 		/// Gets a value indicating whether another request can use the <see cref="T:System.Web.IHttpHandler"/> instance.
 		/// </summary>
@@ -90,7 +92,10 @@ namespace Kelp.ResourceHandling
 						else if (ImageFile.IsFileExtensionSupported(extension))
 							ProcessImageFileRequest(wrapped);
 						else
+						{
+							log.WarnFormat("The file extension {0} is not recognized as either a code or an image file", extension);
 							SendContent(wrapped, absolutePath);
+						}
 
 						break;
 					}
@@ -170,7 +175,7 @@ namespace Kelp.ResourceHandling
 
 		private static void SendContent(HttpContextBase context, string filename)
 		{
-			context.Response.ContentType = "application/octet-stream";
+			context.Response.ContentType = Util.GetMimeType(filename);
 			context.Response.BinaryWrite(File.ReadAllBytes(filename));
 		}
 
