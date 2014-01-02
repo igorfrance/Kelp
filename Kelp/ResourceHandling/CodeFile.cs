@@ -324,7 +324,9 @@ namespace Kelp.ResourceHandling
 		/// <returns>A new instance of <see cref="CodeFile"/>.</returns>
 		public static CodeFile CreateFromExtension(string path, FileTypeConfiguration settings = null)
 		{
-			string extension = Path.GetExtension(path).Trim('.');
+			Contract.Requires<ArgumentNullException>(!string.IsNullOrEmpty(path));
+
+			string extension = Path.GetExtension(path).Trim('.').ToLower();
 
 			if (extension.EndsWith("css"))
 				return CreateFromResourceType(ResourceType.CSS, settings);
@@ -345,7 +347,7 @@ namespace Kelp.ResourceHandling
 			if (type == ResourceType.LessCSS)
 				return CodeFile.Create<LessCssFile>(settings);
 			if (type == ResourceType.CSS)
-				return CodeFile.Create<LessCssFile>(settings);
+				return CodeFile.Create<CssFile>(settings);
 
 			return CodeFile.Create<ScriptFile>(settings);
 		}
