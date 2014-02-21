@@ -160,6 +160,9 @@
     <Content Include="TestData\Scripts\script3.js" />
     <Content Include="TestData\Scripts\unusual-comments.js" />
     <Content Include="TestData\Styles\Child1\Stylesheet2.css" />
+    <Content Include="TestData\Styles\LessStylesheet1.css">
+      <DependentUpon>LessStylesheet1.less</DependentUpon>
+    </Content>
     <Content Include="TestData\Styles\Stylesheet1.css" />
   </ItemGroup>
   <ItemGroup>
@@ -187,7 +190,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-    <None Include="TestData\Styles\Stylesheet1.less" />
+    <None Include="TestData\Styles\LessStylesheet1.css.map">
+      <DependentUpon>LessStylesheet1.css</DependentUpon>
+    </None>
+    <None Include="TestData\Styles\LessStylesheet1.less" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.

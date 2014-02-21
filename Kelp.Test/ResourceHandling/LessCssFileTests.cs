@@ -37,7 +37,7 @@ namespace Kelp.Test.ResourceHandling
 				MinifyExpressions = true
 			}});
 
-			file.Load(Utilities.GetStylePath("Stylesheet1.less"));
+			file.Load(Utilities.GetStylePath("LessStylesheet1.less"));
 			file.Content.ShouldContain("background:#842210");
 		};
 	}
