@@ -380,7 +380,10 @@ namespace Kelp.ResourceHandling
 		public virtual void Load(string absolutePath, string relativePath = null)
 		{
 			Contract.Requires<ArgumentNullException>(!string.IsNullOrEmpty(absolutePath));
-			Contract.Requires<FileNotFoundException>(File.Exists(absolutePath));
+
+			if (!File.Exists(absolutePath))
+				throw new FileNotFoundException(string.Format("The file {0}{1} doesn't exist", 
+					absolutePath, relativePath != null ? string.Format(" ({0})", relativePath) : string.Empty));
 
 			this.AbsolutePath = absolutePath;
 			this.RelativePath = relativePath ?? Path.GetFileName(absolutePath);
