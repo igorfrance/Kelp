@@ -65,7 +65,7 @@ namespace Kelp.App
 		}
 
 		[STAThread]
-		public static int Main(string[] args)
+		internal static int Main(string[] args)
 		{
 			var arguments = new Arguments(args);
 			appender.Threshold = arguments.Logging;
@@ -114,7 +114,7 @@ namespace Kelp.App
 			return 1;
 		}
 
-		private static int ProcessCodeFile(Arguments arguments)
+		private static void ProcessCodeFile(Arguments arguments)
 		{
 			FileTypeConfiguration settings;
 
@@ -126,8 +126,7 @@ namespace Kelp.App
 			CodeFile file = CodeFile.CreateFromResourceType(arguments.ProcessType, settings);
 			file.CachingEnabled = false;
 
-					log.ErrorFormat("The input file {0} doesn't exist.", inputFile);
-				file.AddFile(inputFile);
+			arguments.Files.Each((Action<string>) file.AddFile);
 
 			if (!string.IsNullOrEmpty(arguments.Target))
 			{
@@ -147,11 +146,11 @@ namespace Kelp.App
 			}
 		}
 
-		private static int ProcessImageFile(Arguments arguments)
+		private static void ProcessImageFile(Arguments arguments)
 		{
 			if (string.IsNullOrEmpty(arguments.Target))
 			{
-				log.ErrorFormat("The input file {0} doesn't exist.", imagePath);
+				log.ErrorFormat("To process an image, please specify the target file");
 				return;
 			}
 
@@ -165,7 +164,7 @@ namespace Kelp.App
 			}
 		}
 
-		static Exception EnsureDirectoryExists(string targetPath)
+		private static Exception EnsureDirectoryExists(string targetPath)
 		{
 			if (string.IsNullOrEmpty(targetPath))
 				return null;
@@ -186,7 +185,7 @@ namespace Kelp.App
 			}
 		}
 
-		static string GetUsage()
+		private static string GetUsage()
 		{
 			StringBuilder result = new StringBuilder();
 			result.AppendLine();
@@ -211,7 +210,7 @@ namespace Kelp.App
 			return result.ToString();
 		}
 
-		static string GetOptions()
+		private static string GetOptions()
 		{
 			StringBuilder result = new StringBuilder();
 			result.AppendLine("Script processing options are: ");
@@ -253,7 +252,7 @@ namespace Kelp.App
 			return result.ToString();
 		}
 
-		static string PrependWorkingDirectoryToPath(string childPath)
+		private static string PrependWorkingDirectoryToPath(string childPath)
 		{
 			if (Path.IsPathRooted(childPath))
 				return childPath;
@@ -261,7 +260,7 @@ namespace Kelp.App
 			return Path.Combine(Environment.CurrentDirectory, childPath);
 		}
 
-		internal class Arguments
+		private class Arguments
 		{
 			private static readonly string[] imageExtensions = { "gif", "png", "bmp", "jpg", "jpeg" };
 			private static readonly string[] scriptExtensions = { "js" };
@@ -327,9 +326,9 @@ namespace Kelp.App
 					else if (name == "log")
 					{
 						switch (value.ToLower())
-						{ 
-							case "debug": 
-								this.Logging = Level.Debug; 
+						{
+							case "debug":
+								this.Logging = Level.Debug;
 								break;
 							case "info":
 								this.Logging = Level.Info;
