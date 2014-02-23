@@ -23,6 +23,7 @@ namespace Kelp.App
 	using System.Reflection;
 	using System.Text;
 
+	using Kelp.Extensions;
 	using Kelp.ResourceHandling;
 
 	using log4net;
@@ -33,18 +34,10 @@ namespace Kelp.App
 	/// <summary>
 	/// Provides an application that offers kelp functionality outside of a web application.
 	/// </summary>
-	static class Program
+	internal static class Program
 	{
 		private static readonly ILog log = LogManager.GetLogger(typeof(Program).FullName);
 		private static readonly ColoredConsoleAppender appender = new ColoredConsoleAppender();
-
-		internal static string Name
-		{
-			get
-			{
-				return Assembly.GetExecutingAssembly().GetName().Name.ToLower();
-			}
-		}
 
 		static Program()
 		{
@@ -63,8 +56,16 @@ namespace Kelp.App
 			repository.Configured = true;
 		}
 
+		internal static string Name
+		{
+			get
+			{
+				return Assembly.GetExecutingAssembly().GetName().Name.ToLower();
+			}
+		}
+
 		[STAThread]
-		static int Main(string[] args)
+		internal static int Main(string[] args)
 		{
 			var arguments = new Arguments(args);
 			appender.Threshold = arguments.Logging;
@@ -113,7 +114,7 @@ namespace Kelp.App
 			return 1;
 		}
 
-		static void ProcessCodeFile(Arguments arguments)
+		private static void ProcessCodeFile(Arguments arguments)
 		{
 			FileTypeConfiguration settings;
 
@@ -125,8 +126,7 @@ namespace Kelp.App
 			CodeFile file = CodeFile.CreateFromResourceType(arguments.ProcessType, settings);
 			file.CachingEnabled = false;
 
-			for (var i = 0; i < arguments.Files.Count; i++)
-				file.AddFile(arguments.Files[i]);
+			arguments.Files.Each((Action<string>) file.AddFile);
 
 			if (!string.IsNullOrEmpty(arguments.Target))
 			{
@@ -146,11 +146,11 @@ namespace Kelp.App
 			}
 		}
 
-		static void ProcessImageFile(Arguments arguments)
+		private static void ProcessImageFile(Arguments arguments)
 		{
 			if (string.IsNullOrEmpty(arguments.Target))
 			{
-				log.ErrorFormat("");
+				log.ErrorFormat("To process an image, please specify the target file");
 				return;
 			}
 
@@ -164,7 +164,7 @@ namespace Kelp.App
 			}
 		}
 
-		static Exception EnsureDirectoryExists(string targetPath)
+		private static Exception EnsureDirectoryExists(string targetPath)
 		{
 			if (string.IsNullOrEmpty(targetPath))
 				return null;
@@ -179,13 +179,13 @@ namespace Kelp.App
 
 				return null;
 			}
-			catch(Exception ex)
+			catch (Exception ex)
 			{
 				return ex;
 			}
 		}
 
-		static string GetUsage()
+		private static string GetUsage()
 		{
 			StringBuilder result = new StringBuilder();
 			result.AppendLine();
@@ -210,7 +210,7 @@ namespace Kelp.App
 			return result.ToString();
 		}
 
-		static string GetOptions()
+		private static string GetOptions()
 		{
 			StringBuilder result = new StringBuilder();
 			result.AppendLine("Script processing options are: ");
@@ -252,7 +252,7 @@ namespace Kelp.App
 			return result.ToString();
 		}
 
-		static string PrependWorkingDirectoryToPath(string childPath)
+		private static string PrependWorkingDirectoryToPath(string childPath)
 		{
 			if (Path.IsPathRooted(childPath))
 				return childPath;
@@ -260,7 +260,7 @@ namespace Kelp.App
 			return Path.Combine(Environment.CurrentDirectory, childPath);
 		}
 
-		class Arguments
+		private class Arguments
 		{
 			private static readonly string[] imageExtensions = { "gif", "png", "bmp", "jpg", "jpeg" };
 			private static readonly string[] scriptExtensions = { "js" };
@@ -287,8 +287,8 @@ namespace Kelp.App
 					if (!argument.StartsWith("-") || !argument.Contains(":"))
 						continue;
 
-					string name = argument.Substring(1, argument.IndexOf(":") - 1);
-					string value = argument.Substring(argument.IndexOf(":") + 1);
+					string name = argument.Substring(1, argument.IndexOf(":", System.StringComparison.Ordinal) - 1);
+					string value = argument.Substring(argument.IndexOf(":", System.StringComparison.Ordinal) + 1);
 
 					if (name == "settings")
 					{
@@ -314,6 +314,7 @@ namespace Kelp.App
 								this.valid = false;
 								return;
 							}
+
 							this.Files.Add(fileInfo.FullName);
 						}
 					}
@@ -371,8 +372,6 @@ namespace Kelp.App
 
 					this.ProcessType = type;
 				}
-
-				
 			}
 
 			public bool Valid
