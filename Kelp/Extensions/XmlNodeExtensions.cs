@@ -36,7 +36,7 @@ namespace Kelp.Extensions
 		/// <paramref name="xpath"/>, and pushes node text info the list of values that is returned.
 		/// </summary>
 		/// <param name="instance">The xml node from which to execute the xpath selection.</param>
-		/// <param name="xpath">The XPath expression that specifies what to select (e.g. './child/@attrib1').</param>
+		/// <param name="xpath">The XPath expression that specifies what to select (e.g. <code>./child/@attrib1</code>).</param>
 		/// <returns>
 		/// List of node values, selected with the specified <paramref name="xpath"/>.
 		/// </returns>
@@ -51,7 +51,7 @@ namespace Kelp.Extensions
 		/// values that is returned.
 		/// </summary>
 		/// <param name="instance">The xml node from which to execute the xpath selection.</param>
-		/// <param name="xpath">The XPath expression that specifies what to select (e.g. './child/@attrib1').</param>
+		/// <param name="xpath">The XPath expression that specifies what to select (e.g. <code>./child/@attrib1</code>).</param>
 		/// <param name="manager">The XML namespace manager to use with the specified <paramref name="xpath"/>.</param>
 		/// <returns>
 		/// List of node values, selected with the specified <paramref name="xpath"/>.
@@ -412,7 +412,7 @@ namespace Kelp.Extensions
 		/// </summary>
 		/// <param name="element">The element to convert.</param>
 		/// <returns>The JSON version of the specified <paramref name="element"/></returns>
-		public static string ToJson(this XmlElement element)
+		public static string ToJson(this XmlNode element)
 		{
 			return ToJson(element, false);
 		}
@@ -425,7 +425,7 @@ namespace Kelp.Extensions
 		/// <returns>
 		/// The JSON version of the specified <paramref name="element"/>
 		/// </returns>
-		public static string ToJson(this XmlElement element, bool prettyPrint)
+		public static string ToJson(this XmlNode element, bool prettyPrint)
 		{
 			Formatting f = prettyPrint ? Formatting.Indented : Formatting.None;
 			return JsonConvert.SerializeXmlNode(element, f, false);
