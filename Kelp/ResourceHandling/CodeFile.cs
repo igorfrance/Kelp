@@ -53,6 +53,27 @@ namespace Kelp.ResourceHandling
 		private bool? cachingEnabled;
 		private string extensions;
 
+		static CodeFile()
+		{
+			fileExtensions = new List<string>();
+			var types = from t in Assembly.GetExecutingAssembly().GetTypes()
+						where t.IsClass && !t.IsAbstract
+						select t;
+
+			foreach (Type type in types)
+			{
+				var attribs = type.GetCustomAttributes(typeof(ResourceFileAttribute), false);
+				if (attribs.Length != 0)
+				{
+					var resourceAttrib = (ResourceFileAttribute) attribs[0];
+					if (resourceAttrib.ContentType.ContainsAnyOf("text", "application"))
+					{
+						fileExtensions.AddRange(resourceAttrib.Extensions);
+					}
+				}
+			}
+		}
+
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CodeFile"/> class.
 		/// </summary>
@@ -461,33 +482,6 @@ namespace Kelp.ResourceHandling
 
 		internal static bool IsFileExtensionSupported(string extension)
 		{
-			if (fileExtensions == null)
-			{
-				lock (log)
-				{
-					if (fileExtensions == null)
-					{
-						fileExtensions = new List<string>();
-						var types = from t in Assembly.GetExecutingAssembly().GetTypes()
-									where t.IsClass && !t.IsAbstract
-									select t;
-
-						foreach (Type type in types)
-						{
-							var attribs = type.GetCustomAttributes(typeof(ResourceFileAttribute), false);
-							if (attribs.Length != 0)
-							{
-								var resourceAttrib = (ResourceFileAttribute) attribs[0];
-								if (resourceAttrib.ContentType.ContainsAnyOf("text", "application"))
-								{
-									fileExtensions.AddRange(resourceAttrib.Extensions);
-								}
-							}
-						}
-					}
-				}
-			}
-
 			return fileExtensions.Contains(extension, StringComparer.InvariantCultureIgnoreCase);
 		}
 

@@ -45,10 +45,29 @@ namespace Kelp.ResourceHandling
 		protected QueryString parameters;
 
 		private static readonly ILog log = LogManager.GetLogger(typeof(ImageFile).FullName);
-		private static List<string> extensions;
+		private static readonly List<string> extensions;
 		private readonly string absolutePath;
 		private byte[] imageBytes;
 		private MemoryStream stream;
+
+		static ImageFile()
+		{
+			extensions = new List<string>();
+			var types = from t in Assembly.GetExecutingAssembly().GetTypes()
+						where t.IsClass && !t.IsAbstract
+						select t;
+
+			foreach (Type type in types)
+			{
+				var attribs = type.GetCustomAttributes(typeof(ResourceFileAttribute), false);
+				if (attribs.Length != 0)
+				{
+					var resourceAttrib = (ResourceFileAttribute) attribs[0];
+					if (resourceAttrib.ContentType.ContainsAnyOf("image"))
+						extensions.AddRange(resourceAttrib.Extensions);
+				}
+			}
+		}
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="ImageFile"/> class.
@@ -220,6 +239,11 @@ namespace Kelp.ResourceHandling
 			return instance;
 		}
 
+		internal static bool IsFileExtensionSupported(string extension)
+		{
+			return extensions.Contains(extension, StringComparer.InvariantCultureIgnoreCase);
+		}
+
 		private byte[] Load()
 		{
 			bool useCache = false;
@@ -258,36 +282,6 @@ namespace Kelp.ResourceHandling
 			}
 
 			return imageData;
-		}
-
-		internal static bool IsFileExtensionSupported(string extension)
-		{
-			if (extensions == null)
-			{
-				lock (log)
-				{
-					if (extensions == null)
-					{
-						extensions = new List<string>();
-						var types = from t in Assembly.GetExecutingAssembly().GetTypes()
-									where t.IsClass && !t.IsAbstract
-									select t;
-
-						foreach (Type type in types)
-						{
-							var attribs = type.GetCustomAttributes(typeof(ResourceFileAttribute), false);
-							if (attribs.Length != 0)
-							{
-								var resourceAttrib = (ResourceFileAttribute) attribs[0];
-								if (resourceAttrib.ContentType.ContainsAnyOf("image"))
-									extensions.AddRange(resourceAttrib.Extensions);
-							}
-						}
-					}
-				}
-			}
-
-			return extensions.Contains(extension, StringComparer.InvariantCultureIgnoreCase);
 		}
 	}
 }
