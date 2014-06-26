@@ -16,6 +16,7 @@
 namespace Kelp.Extensions
 {
 	using System;
+	using System.Collections.Specialized;
 	using System.Diagnostics.Contracts;
 	using System.Text;
 	using System.Text.RegularExpressions;
@@ -25,6 +26,8 @@ namespace Kelp.Extensions
 	/// </summary>
 	public static class StringExtensions
 	{
+		private static readonly Regex SubstitutionExpression = new Regex(@"\{([^}{]+)\}", RegexOptions.Compiled);
+
 		/// <summary>
 		/// Returns a value indicating whether the specified <paramref name="value"/> occurs within this string.
 		/// </summary>
@@ -311,6 +314,21 @@ namespace Kelp.Extensions
 				result.Append(subject);
 
 			return result.ToString();
+		}
+
+		/// <summary>
+		/// Searches the specified <paramref name="subject"/> for placeholders such as <code>{name}</code> 
+		/// and replaces them with values with matching keys in the specified <paramref name="values"/>.
+		/// </summary>
+		/// <param name="subject">The string to substitute.</param>
+		/// <param name="values">The substitution values.</param>
+		/// <returns>The substituted <paramref name="subject"/>.</returns>
+		public static string Substitute(this string subject, NameValueCollection values)
+		{
+			if (string.IsNullOrWhiteSpace(subject))
+				return subject;
+
+			return SubstitutionExpression.Replace(subject, (m) => values[m.Groups[1].Value] ?? string.Empty);
 		}
 
 		/// <summary>
