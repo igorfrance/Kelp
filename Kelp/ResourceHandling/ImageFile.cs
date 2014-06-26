@@ -265,15 +265,15 @@ namespace Kelp.ResourceHandling
 			{
 				try
 				{
+					MemoryStream outputStream = new MemoryStream();
+					outputImage.Save(outputStream, CodecInfo, CodecParameters);
+					imageData = outputStream.GetBuffer();
+
 					var cacheDir = Path.GetDirectoryName(CachePath);
 					if (!Directory.Exists(cacheDir))
 						Directory.CreateDirectory(cacheDir);
 
 					outputImage.Save(CachePath);
-					MemoryStream outputStream = new MemoryStream();
-
-					outputImage.Save(outputStream, CodecInfo, CodecParameters);
-					imageData = outputStream.GetBuffer();
 				}
 				catch (Exception ex)
 				{
