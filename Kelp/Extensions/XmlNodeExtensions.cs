@@ -71,6 +71,30 @@ namespace Kelp.Extensions
 		}
 
 		/// <summary>
+		/// Removes any nodes within <paramref name="instance"/> selected using the specified <paramref name="xpath"/>.
+		/// </summary>
+		/// <param name="instance">The instance being extended.</param>
+		/// <param name="xpath">The selection xpath.</param>
+		/// <param name="man">Optional namespace manager.</param>
+		/// <returns>The <paramref name="instance"/>.</returns>
+		public static XmlNode Remove(this XmlNode instance, string xpath, XmlNamespaceManager man = null)
+		{
+			Contract.Requires<ArgumentNullException>(instance != null);
+			Contract.Requires<ArgumentNullException>(xpath != null);
+
+			var children = man == null
+				? instance.SelectNodes(xpath)
+				: instance.SelectNodes(xpath, man);
+
+			foreach (XmlNode child in children)
+			{
+				child.ParentNode.RemoveChild(child);
+			}
+
+			return instance;
+		}
+
+		/// <summary>
 		/// Appends the specified element to the current node and returns it.
 		/// </summary>
 		/// <param name="instance">The target node to append the element to.</param>
