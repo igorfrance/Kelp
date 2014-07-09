@@ -188,6 +188,15 @@ namespace Kelp.ResourceHandling
 		}
 
 		/// <summary>
+		/// Gets or sets a value indicating whether to skip processing the image
+		/// </summary>
+		protected virtual bool SkipProcessing
+		{
+			get;
+			set;
+		}
+
+		/// <summary>
 		/// Gets the codec info to use when saving this image file instance.
 		/// </summary>
 		protected abstract ImageCodecInfo CodecInfo { get; }
@@ -260,25 +269,38 @@ namespace Kelp.ResourceHandling
 				return File.ReadAllBytes(this.CachePath);
 			}
 
-			using (Bitmap inputImage = new Bitmap(absolutePath))
-			using (Bitmap outputImage = filter.Apply(inputImage))
+			var img = Image.FromFile(absolutePath);
+			var dimensions = new FrameDimension(img.FrameDimensionsList[0]);
+			var frameCount = img.GetFrameCount(dimensions);
+
+			//// If frame count is greater than 1 it's an animated gif, and we don't want to process those
+			if (frameCount > 1)
 			{
-				try
+				imageData = File.ReadAllBytes(absolutePath);
+			}
+			else
+			{
+				using (Bitmap inputImage = new Bitmap(absolutePath))
+				using (Bitmap outputImage = filter.Apply(inputImage))
 				{
 					MemoryStream outputStream = new MemoryStream();
 					outputImage.Save(outputStream, CodecInfo, CodecParameters);
 					imageData = outputStream.GetBuffer();
-
-					var cacheDir = Path.GetDirectoryName(CachePath);
-					if (!Directory.Exists(cacheDir))
-						Directory.CreateDirectory(cacheDir);
-
-					outputImage.Save(CachePath);
 				}
-				catch (Exception ex)
-				{
-					log.ErrorFormat("Failed to save image to '{0}': {1}", CachePath, ex.Message);
-				}
+			}
+
+			try
+			{
+				var cacheDir = Path.GetDirectoryName(CachePath);
+				if (!Directory.Exists(cacheDir))
+					Directory.CreateDirectory(cacheDir);
+
+				File.WriteAllBytes(CachePath, imageData);
+			}
+			catch (Exception ex)
+			{
+				log.ErrorFormat("Failed to cache the image to {0}: {1}", CachePath, ex.Message);
+				throw;
 			}
 
 			return imageData;
