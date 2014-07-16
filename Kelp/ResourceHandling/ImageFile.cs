@@ -177,6 +177,17 @@ namespace Kelp.ResourceHandling
 		public bool UseCache { get; set; }
 
 		/// <summary>
+		/// Gets the absolute path of this image.
+		/// </summary>
+		public string AbsolutePath
+		{
+			get
+			{
+				return this.absolutePath;
+			}
+		}
+
+		/// <summary>
 		/// Gets the stream of bytes from this image.
 		/// </summary>
 		public Stream Stream
@@ -272,6 +283,7 @@ namespace Kelp.ResourceHandling
 			var img = Image.FromFile(absolutePath);
 			var dimensions = new FrameDimension(img.FrameDimensionsList[0]);
 			var frameCount = img.GetFrameCount(dimensions);
+			img.Dispose();
 
 			//// If frame count is greater than 1 it's an animated gif, and we don't want to process those
 			if (frameCount > 1)
