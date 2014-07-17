@@ -84,6 +84,7 @@ namespace Kelp.Test.ResourceHandling
 			var bm = new Bitmap(subject.CachePath);
 			bm.Width.ShouldEqual(400);
 			bm.Height.ShouldEqual(300);
+			bm.Dispose();
 		};
 	}
 }
