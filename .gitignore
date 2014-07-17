@@ -11,3 +11,4 @@ log/
 *.tf1
 *.tfb
 /Kelp.sln.GhostDoc.xml
+/releases

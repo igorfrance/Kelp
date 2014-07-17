@@ -1,17 +1,32 @@
 <?xml version="1.0"?>
 <project name="Sage" xmlns="http://nant.sf.net/release/0.91-alpha2/nant.xsd" default="default">
-	
+
 	<property name="solutionFile" value="Kelp.sln"/>
+	<property name="outputPath" value="releases/latest"/>
 	<property name="buildConfiguration" value="Debug"/>
-	
+	<property name="kelpTestPath" value=""/>
+	<property name="mspecPath" value="G:\cycle99\tools\mspec\mspec-clr4.exe" overwrite="false"/>
+
 	<target name="default">
+		<mkdir dir="${outputPath}/exe"/>
+		<mkdir dir="${outputPath}/dll"/>
+		<call target="build-solution"/>
+		<call target="run-tests"/>
+		<call target="merge-dependencies"/>
+	</target>
+
+
+	<target name="build-solution">
 		<msbuild project="${solutionFile}" verbosity="Normal">
 			<property name="Configuration" value="${buildConfiguration}"/>
 		</msbuild>
+	</target>
+
+	<target name="merge-dependencies">
 		<echo>Merging all dependencies into a single Kelp executable...</echo>
 		<exec program=".nuget\packages\ILRepack.1.22.2\tools\ILRepack.exe">
 			<arg value="/ndebug"/>
-			<arg value="/out:Kelp.App\bin\Kelp.exe"/>
+			<arg value="/out:${outputPath}/exe/Kelp.exe"/>
 			<arg value="Kelp.App\bin\Debug\Kelp.App.exe"/>
 			<arg value="Kelp.App\bin\Debug\AForge.dll"/>
 			<arg value="Kelp.App\bin\Debug\AForge.Imaging.dll"/>
@@ -23,6 +38,184 @@
 			<arg value="Kelp.App\bin\Debug\Newtonsoft.Json.dll"/>
 		</exec>
 		<echo>Done.</echo>
+		<copy todir="${outputPath}/dll">
+			<fileset basedir="Kelp/bin/${buildConfiguration}">
+				<include name="*.dll"/>
+				<include name="*.xml"/>
+				<include name="*.pdb"/>
+			</fileset>
+		</copy>
 	</target>
-	
+
+	<target name="run-tests">
+		<echo>Running unit tests...</echo>
+
+		<set-xml-attribute
+			file="kelp.test/bin/${buildConfiguration}/Kelp.Test.dll.config"
+			xpath="/configuration/resourceHandling/@tempDir"
+			value="C:\TeamCity\temp\cache\">
+			<namespaces>
+				<namespace prefix="p" uri="http://www.cycle99.com/schemas/sage/configuration/project.xsd"/>
+			</namespaces>
+		</set-xml-attribute>
+
+		<exec program="${mspecPath}" workingdir=".">
+			<arg value="--html"/>
+			<arg path="${outputPath}/test-results.html"/>
+			<arg value="--xml"/>
+			<arg path="${outputPath}/test-results.xml"/>
+			<arg path="kelp.test/bin/${buildConfiguration}/Kelp.Test.dll"/>
+		</exec>
+		<!--<style style="${BUILD_TOOLS}/mspec/mspec2nunit.xsl"-->
+					 <!--in="${outputPath}/test-results/mspec/WhiteLabel.Engine.Test.Results.xml"-->
+					 <!--out="${outputPath}/test-results/nunit/WhiteLabel.Engine.Test.Results.MSpec.xml"/>-->
+		<!--<exec program="${BUILD_TOOLS}/mspec/mspec.exe"-->
+			<!--workingdir="${BUILD_TOOLS}/mspec">-->
+			<!--<arg value="- -html"/>-->
+			<!--<arg path="${outputPath}/test-results/mspec/WhiteLabel.ResourceHandling.Test.Results.html"/>-->
+			<!--<arg value="- -xml"/>-->
+			<!--<arg path="${outputPath}/test-results/mspec/WhiteLabel.ResourceHandling.Test.Results.xml"/>-->
+			<!--<arg path="${outputPathTest2}/WhiteLabel.ResourceHandling.Test.dll"/>-->
+		<!--</exec>-->
+		<!--<style style="${BUILD_TOOLS}/mspec/mspec2nunit.xsl"-->
+					 <!--in="${outputPath}/test-results/mspec/WhiteLabel.ResourceHandling.Test.Results.xml"-->
+					 <!--out="${outputPath}/test-results/nunit/WhiteLabel.ResourceHandling.Test.Results.Mspec.xml"/>-->
+	</target>
+
+	<script language="C#" prefix="test" >
+		<references>
+			<include name="System.Xml.dll" />
+		</references>
+		<code>
+
+				<![CDATA[
+					[TaskName("set-xml-attribute")]
+					public class TestTask : Task
+					{
+						private NAnt.Core.Types.XmlNamespaceCollection namespaces = new NAnt.Core.Types.XmlNamespaceCollection();
+
+						[TaskAttribute("file", Required=true)]
+						public string FileName
+						{
+							get;
+							set;
+						}
+
+						[TaskAttribute("xpath", Required=true)]
+						public string XPath
+						{
+							get;
+							set;
+						}
+
+						[TaskAttribute("value", Required=true)]
+						public string Value
+						{
+							get;
+							set;
+						}
+
+						[BuildElementCollection("namespaces", "namespace")]
+						public NAnt.Core.Types.XmlNamespaceCollection Namespaces
+						{
+							get { return namespaces; }
+							set { namespaces = value; }
+						}
+
+						protected override void ExecuteTask()
+						{
+							System.Xml.XmlDocument document = new System.Xml.XmlDocument();
+							document.Load(this.FileName);
+
+							System.Xml.XmlNamespaceManager nsManager = new System.Xml.XmlNamespaceManager(document.NameTable);
+							foreach (NAnt.Core.Types.XmlNamespace ns in this.Namespaces)
+							{
+								if (!(!ns.IfDefined || ns.UnlessDefined))
+								{
+									nsManager.AddNamespace(ns.Prefix, ns.Uri);
+								}
+							}
+
+							System.Xml.XmlNode selection = document.SelectSingleNode(this.XPath, nsManager);
+							if (selection == null)
+								selection = MakeXPath(document.DocumentElement, this.XPath, nsManager);
+
+							if (selection != null)
+							{
+								selection.Value = this.Value;
+								document.Save(this.FileName);
+							}
+						}
+
+						private System.Xml.XmlNode MakeXPath(System.Xml.XmlElement parent, string xpath, System.Xml.XmlNamespaceManager nm)
+						{
+							string[] parts = xpath.Trim('/').Split('/');
+							if (parts.Length == 0 || string.IsNullOrEmpty(parts[0]))
+								return parent;
+
+							string next = parts[0];
+
+							System.Xml.XmlNode node = parent.SelectSingleNode(next, nm);
+							if (node == null)
+							{
+								bool isElement = true;
+								if (next.StartsWith("@"))
+								{
+									isElement = false;
+									next = next.Trim('@');
+								}
+
+								if (next.IndexOf(":") != -1)
+								{
+									string[] chunks = next.Split(':');
+									string ns = nm.LookupNamespace(chunks[0]);
+									string name = chunks[1];
+
+									if (string.IsNullOrEmpty(ns))
+									{
+										this.Log(Level.Error, string.Format("Could not create {0}; the namespace for {1} could not be found",
+											next, parts[0]));
+
+										return null;
+									}
+
+									if (isElement)
+									{
+										node = parent.AppendChild(parent.OwnerDocument.CreateElement(name, ns));
+									}
+									else
+									{
+										parent.SetAttribute(name, ns, string.Empty);
+										node = parent.Attributes[next];
+									}
+								}
+								else
+								{
+									if (isElement)
+									{
+										node = parent.AppendChild(parent.OwnerDocument.CreateElement(next));
+									}
+									else
+									{
+										parent.SetAttribute(next, string.Empty);
+										node = parent.Attributes[next];
+									}
+								}
+							}
+
+							if (parts.Length == 1)
+								return node;
+
+							string[] parts2 = new string[parts.Length - 1];
+							Array.Copy(parts, 1, parts2, 0, parts2.Length);
+
+							string rest = string.Join("/", parts2);
+							return MakeXPath((System.Xml.XmlElement) node, rest, nm);
+
+						}
+					}
+				]]>
+		</code>
+	</script>
+
 </project>
