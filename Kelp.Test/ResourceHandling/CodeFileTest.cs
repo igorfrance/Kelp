@@ -21,7 +21,7 @@ namespace Kelp.Test.ResourceHandling
 
 	using Machine.Specifications;
 
-	[Subject(typeof(CodeFile))]
+	[Subject(typeof(CodeFile)), Tags(Categories.ResourceHandling)]
 	public class CodeFileTest
 	{
 		static CodeFileTest()
