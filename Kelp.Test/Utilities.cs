@@ -166,7 +166,7 @@ namespace Kelp.Test
 
 			string path = GetFilePath(parentPath, scriptName);
 			if (!File.Exists(path))
-				throw new FileNotFoundException(String.Format("The specified file '{0}' doesn't exist in {1}", scriptName, parentPath));
+				throw new FileNotFoundException(string.Format("The specified file '{0}' doesn't exist in {1}", scriptName, parentPath));
 
 			return File.ReadAllText(path);
 		}
