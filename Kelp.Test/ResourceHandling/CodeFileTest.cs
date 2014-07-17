@@ -32,7 +32,7 @@ namespace Kelp.Test.ResourceHandling
 
 		~CodeFileTest()
 		{
-			Utilities.ClearTemporaryDirectory();
+			//Utilities.ClearTemporaryDirectory();
 		}
 
 		It Should_support_registered_text_based_file_extensions = () =>

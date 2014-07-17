@@ -31,7 +31,7 @@ namespace Kelp.Test.ResourceHandling
 	{
 		~ImageFileTest()
 		{
-			Utilities.ClearTemporaryDirectory();
+			//Utilities.ClearTemporaryDirectory();
 		}
 
 		It Should_support_registered_text_based_file_extensions = () =>
@@ -81,7 +81,6 @@ namespace Kelp.Test.ResourceHandling
 
 		It Should_resize_image_to_400x300 = () => 
 		{
-			Console.WriteLine("Opening bitmap " + subject.CachePath);
 			var bm = new Bitmap(subject.CachePath);
 			bm.Width.ShouldEqual(400);
 			bm.Height.ShouldEqual(300);
