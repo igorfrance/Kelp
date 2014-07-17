@@ -301,18 +301,21 @@ namespace Kelp.ResourceHandling
 				}
 			}
 
-			try
+			if (this.UseCache)
 			{
-				var cacheDir = Path.GetDirectoryName(CachePath);
-				if (!Directory.Exists(cacheDir))
-					Directory.CreateDirectory(cacheDir);
+				try
+				{
+					var cacheDir = Path.GetDirectoryName(CachePath);
+					if (!Directory.Exists(cacheDir))
+						Directory.CreateDirectory(cacheDir);
 
-				File.WriteAllBytes(CachePath, imageData);
-			}
-			catch (Exception ex)
-			{
-				log.ErrorFormat("Failed to cache the image to {0}: {1}", CachePath, ex.Message);
-				throw;
+					File.WriteAllBytes(CachePath, imageData);
+				}
+				catch (Exception ex)
+				{
+					log.ErrorFormat("Failed to cache the image to {0}: {1}", CachePath, ex.Message);
+					throw;
+				}
 			}
 
 			return imageData;

@@ -54,6 +54,7 @@ namespace Kelp.Test.ResourceHandling
 		Because bcs = () =>
 		{
 			subject = ImageFile.Create(Utilities.GetImagePath("illustration4.jpg"), queryString);
+			subject.UseCache = false;
 			byteCount = subject.Bytes.Length;
 		};
 
