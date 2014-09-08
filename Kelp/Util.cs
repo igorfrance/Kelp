@@ -22,6 +22,7 @@ namespace Kelp
 	using System.Reflection;
 	using System.Text;
 	using System.Text.RegularExpressions;
+	using System.Web;
 
 	using log4net;
 
@@ -73,13 +74,19 @@ namespace Kelp
 		/// <returns>An absolute path of the specified <paramref name="relativePath"/>.</returns>
 		public static string MapPath(string relativePath)
 		{
-			var currentDirectory = Path.GetDirectoryName(ExecutingAssemblyName);
+			if (Path.IsPathRooted(relativePath))
+				return relativePath;
 
+			var currentDirectory = Path.GetDirectoryName(ExecutingAssemblyName);
+			if (HttpContext.Current != null)
+				currentDirectory = HttpContext.Current.Server.MapPath("~/");
+
+			currentDirectory = currentDirectory.TrimEnd('\\');
 			var path = relativePath
 				.Replace("~", currentDirectory)
 				.Replace("/", "\\");
 
-			if (!Path.IsPathRooted(path))
+			if (!Path.IsPathRooted(relativePath))
 				path = Path.Combine(currentDirectory, path);
 
 			return path;
