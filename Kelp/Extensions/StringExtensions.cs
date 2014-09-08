@@ -26,7 +26,10 @@ namespace Kelp.Extensions
 	/// </summary>
 	public static class StringExtensions
 	{
-		private static readonly Regex SubstitutionExpression = new Regex(@"\{([^}{]+)\}", RegexOptions.Compiled);
+		/// <summary>
+		/// Matches curly brace surrounded placeholder texts, such as <c>{example}</c>.
+		/// </summary>
+		public static readonly Regex SubstitutionExpression = new Regex(@"\{([^}{]+)\}", RegexOptions.Compiled);
 
 		/// <summary>
 		/// Returns a value indicating whether the specified <paramref name="value"/> occurs within this string.
