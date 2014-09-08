@@ -29,7 +29,7 @@ namespace Kelp.ResourceHandling
 		/// Initializes a new instance of the <see cref="JpegFile"/> class.
 		/// </summary>
 		/// <param name="absolutePath">The absolute path of the image.</param>
-		public JpegFile(string absolutePath)
+		internal JpegFile(string absolutePath)
 			: base(absolutePath)
 		{
 		}

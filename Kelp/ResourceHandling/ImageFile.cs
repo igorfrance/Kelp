@@ -225,11 +225,11 @@ namespace Kelp.ResourceHandling
 		/// with the <see cref="ImageFile"/> that will be created.</param>
 		/// <param name="temporaryDirectory">The temporary directory in which to save the caches.</param>
 		/// <returns>A new <see cref="ImageFile"/> instance matching the specified absolute path by extension.</returns>
-		public static ImageFile Create(string absolutePath, string parameters, string temporaryDirectory = null)
+		public static ImageFile Create(string absolutePath, string parameters = null, string temporaryDirectory = null)
 		{
 			Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(absolutePath));
 
-			return Create(absolutePath, new QueryString(parameters), temporaryDirectory);
+			return Create(absolutePath, new QueryString(parameters ?? string.Empty), temporaryDirectory);
 		}
 
 		/// <summary>
@@ -253,7 +253,7 @@ namespace Kelp.ResourceHandling
 			else
 				instance = new JpegFile(absolutePath);
 
-			instance.TemporaryDirectory = temporaryDirectory ?? Configuration.Current.TemporaryDirectory;
+			instance.TemporaryDirectory = Kelp.Util.MapPath(temporaryDirectory ?? Configuration.Current.TemporaryDirectory);
 			instance.filter = new QueryFilter(parameters);
 			instance.parameters = parameters;
 			return instance;
