@@ -634,7 +634,7 @@ namespace Kelp
 		/// <param name="keyValueSeparator">The key/value separator.</param>
 		/// <param name="pairSeparator">The pair separator.</param>
 		/// <returns>A <see cref="String" /> that contains this collection's name/value pairs packed as a URL query string.</returns>
-		public string ToString(string symbolToPrepend, char pairSeparator = '&', char keyValueSeparator = '=')
+		public string ToString(string symbolToPrepend, string pairSeparator = "&", string keyValueSeparator = "=")
 		{
 			string[] pairs = new string[this.Count];
 

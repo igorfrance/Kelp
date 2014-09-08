@@ -50,10 +50,10 @@ namespace Kelp.Test.Core
 			new QueryString("a=1&b=2&c=3").ToString().ShouldEqual("a=1&b=2&c=3");
 
 		private It Should_correctly_use_alternative_pair_separator = () => 
-			new QueryString("a=1&b=2&c=3").ToString(string.Empty, ',').ShouldEqual("a=1,b=2,c=3");
+			new QueryString("a=1&b=2&c=3").ToString(string.Empty, ",").ShouldEqual("a=1,b=2,c=3");
 
 		private It Should_correctly_use_alternative_pair_and_key_value_separators = () =>
-			new QueryString("a=1&b=2&c=3").ToString(string.Empty, ',', '~').ShouldEqual("a~1,b~2,c~3");
+			new QueryString("a=1&b=2&c=3").ToString(string.Empty, ",", "~").ShouldEqual("a~1,b~2,c~3");
 
 		private It Should_correctly_serialize_instance_initialized_from_collection = () =>
 			(new QueryString { { "a", "1" }, { "b", "2" }, { "c", "3" } }).ToString().ShouldEqual("a=1&b=2&c=3");
