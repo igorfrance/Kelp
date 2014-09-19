@@ -30,6 +30,7 @@ namespace Kelp.Extensions
 		/// Matches curly brace surrounded placeholder texts, such as <c>{example}</c>.
 		/// </summary>
 		public static readonly Regex SubstitutionExpression = new Regex(@"\{([^}{]+)\}", RegexOptions.Compiled);
+		private static readonly Regex whitespaceExpr = new Regex(@"[\s\t\r\n]+", RegexOptions.Compiled);
 
 		/// <summary>
 		/// Returns a value indicating whether the specified <paramref name="value"/> occurs within this string.
@@ -320,6 +321,22 @@ namespace Kelp.Extensions
 		}
 
 		/// <summary>
+		/// Reverses the characters of the string.
+		/// </summary>
+		/// <param name="subject">The original string.</param>
+		/// <returns>The reversed string</returns>
+		public static string Rev(this string subject)
+		{
+			if (subject == null)
+				return null;
+
+			// this was posted by petebob as well 
+			char[] array = subject.ToCharArray();
+			Array.Reverse(array);
+			return new String(array);
+		}
+
+		/// <summary>
 		/// Searches the specified <paramref name="subject"/> for placeholders such as <code>{name}</code> 
 		/// and replaces them with values with matching keys in the specified <paramref name="values"/>.
 		/// </summary>
@@ -331,7 +348,21 @@ namespace Kelp.Extensions
 			if (string.IsNullOrWhiteSpace(subject))
 				return subject;
 
-			return SubstitutionExpression.Replace(subject, (m) => values[m.Groups[1].Value] ?? string.Empty);
+			return SubstitutionExpression.Replace(subject, (m) => values[m.Groups[1].Value] ?? m.Groups[0].Value);
+		}
+
+		/// <summary>
+		/// Sanitizes the specified subject of any unnecessary whitespace.
+		/// </summary>
+		/// <param name="subject">The subject.</param>
+		/// <returns>The sanitized subject</returns>
+		/// <remarks>The unnecessary whitespace are any tabs, line breaks or multiple consecutive spaces.</remarks>
+		public static string Sanitize(this string subject)
+		{
+			if (string.IsNullOrEmpty(subject))
+				return subject;
+
+			return whitespaceExpr.Replace(subject, " ").Trim();
 		}
 
 		/// <summary>
