@@ -17,9 +17,12 @@ namespace Kelp.Http
 {
 	using System;
 	using System.Collections.Generic;
+	using System.Diagnostics.Contracts;
 	using System.IO;
 	using System.Net;
 	using System.Reflection;
+	using System.Security.Cryptography;
+	using System.Text;
 	using System.Web;
 
 	/// <summary>
@@ -130,6 +133,29 @@ namespace Kelp.Http
 		public static string GetMimeType(string filename)
 		{
 			return (string) GetMimeMapping.Invoke(temp, new object[] { filename });
+		}
+
+		/// <summary>
+		/// Gets an E-tag for the specified <paramref name="fileName"/> and <paramref name="lastModified"/> date.
+		/// </summary>
+		/// <param name="fileName">Name of the file.</param>
+		/// <param name="lastModified">The last modified date of the file.</param>
+		/// <returns>The E-Tag that matches the specified <paramref name="fileName"/> and <paramref name="lastModified"/> date.</returns>
+		public static string GetETag(string fileName, DateTime lastModified)
+		{
+			Contract.Requires<ArgumentNullException>(!string.IsNullOrEmpty(fileName));
+
+			Encoder stringEncoder = Encoding.UTF8.GetEncoder();
+			MD5CryptoServiceProvider md5 = new MD5CryptoServiceProvider();
+
+			string fileString = fileName + lastModified +
+				Assembly.GetExecutingAssembly().GetName().Version;
+
+			// get string bytes
+			byte[] bytes = new byte[stringEncoder.GetByteCount(fileString.ToCharArray(), 0, fileString.Length, true)];
+			stringEncoder.GetBytes(fileString.ToCharArray(), 0, fileString.Length, bytes, 0, true);
+
+			return BitConverter.ToString(md5.ComputeHash(bytes)).Replace("-", string.Empty).ToLower();
 		}
 
 		/// <summary>

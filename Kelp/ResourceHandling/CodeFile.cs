@@ -21,13 +21,10 @@ namespace Kelp.ResourceHandling
 	using System.IO;
 	using System.Linq;
 	using System.Reflection;
-	using System.Security.Cryptography;
 	using System.Text;
 	using System.Text.RegularExpressions;
 
 	using Kelp.Extensions;
-	using Kelp.Http;
-
 	using log4net;
 
 	/// <summary>
@@ -131,9 +128,9 @@ namespace Kelp.ResourceHandling
 			get
 			{
 				if (File.Exists(this.CacheName))
-					return Util.GetDateLastModified(this.CacheName);
+					return Http.Util.GetDateLastModified(this.CacheName);
 
-				return Util.GetDateLastModified(this.Dependencies);
+				return Http.Util.GetDateLastModified(this.Dependencies);
 			}
 		}
 
@@ -175,7 +172,7 @@ namespace Kelp.ResourceHandling
 		{
 			get
 			{
-				return GetETag(this.RelativePath, this.LastModified);
+				return Http.Util.GetETag(this.RelativePath, this.LastModified);
 			}
 		}
 
@@ -272,29 +269,6 @@ namespace Kelp.ResourceHandling
 		/// was included from another.
 		/// </summary>
 		protected CodeFile Parent { get; private set; }
-
-		/// <summary>
-		/// Gets an E-tag for the specified <paramref name="fileName"/> and <paramref name="lastModified"/> date.
-		/// </summary>
-		/// <param name="fileName">Name of the file.</param>
-		/// <param name="lastModified">The last modified date of the file.</param>
-		/// <returns>The E-Tag that matches the specified <paramref name="fileName"/> and <paramref name="lastModified"/> date.</returns>
-		public static string GetETag(string fileName, DateTime lastModified)
-		{
-			Contract.Requires<ArgumentNullException>(!string.IsNullOrEmpty(fileName));
-
-			Encoder stringEncoder = Encoding.UTF8.GetEncoder();
-			MD5CryptoServiceProvider md5 = new MD5CryptoServiceProvider();
-
-			string fileString = fileName + lastModified +
-				Assembly.GetExecutingAssembly().GetName().Version;
-
-			// get string bytes
-			byte[] bytes = new byte[stringEncoder.GetByteCount(fileString.ToCharArray(), 0, fileString.Length, true)];
-			stringEncoder.GetBytes(fileString.ToCharArray(), 0, fileString.Length, bytes, 0, true);
-
-			return BitConverter.ToString(md5.ComputeHash(bytes)).Replace("-", string.Empty).ToLower();
-		}
 
 		/// <summary>
 		/// Returns an instance of <see cref="CodeFile" />, loaded with content from <paramref name="absolutePath" />.
@@ -662,7 +636,7 @@ namespace Kelp.ResourceHandling
 					if (!File.Exists(referencePath))
 						return true;
 
-					var referenceModified = Util.GetDateLastModified(referencePath);
+					var referenceModified = Http.Util.GetDateLastModified(referencePath);
 					if (referenceModified > cacheEntry.LastModified)
 						return true;
 				}
@@ -855,7 +829,7 @@ namespace Kelp.ResourceHandling
 				{
 					this.Exists = true;
 					this.Content = File.ReadAllText(path, Encoding.UTF8);
-					this.LastModified = Util.GetDateLastModified(path);
+					this.LastModified = Http.Util.GetDateLastModified(path);
 				}
 			}
 		}

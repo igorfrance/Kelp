@@ -199,6 +199,17 @@ namespace Kelp.ResourceHandling
 		}
 
 		/// <summary>
+		/// Gets an E-tag for the file represented with this instance.
+		/// </summary>
+		public string ETag
+		{
+			get
+			{
+				return Util.GetETag(this.absolutePath, this.LastModified);
+			}
+		}
+
+		/// <summary>
 		/// Gets or sets a value indicating whether to skip processing the image
 		/// </summary>
 		protected virtual bool SkipProcessing
