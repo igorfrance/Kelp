@@ -322,7 +322,13 @@ namespace Kelp.Extensions
 		public static string GetString(this XmlNode instance, string xpath, XmlNamespaceManager manager = null)
 		{
 			XmlNode selection = instance.SelectSingleNode(xpath, manager);
-			return selection != null ? selection.InnerText.Trim() : null;
+			return selection == null ? null :
+				selection.InnerXml.Trim()
+					.Replace("&amp;", "&")
+					.Replace("&quot;", "\"")
+					.Replace("&apos;", "'")
+					.Replace("&lt;", "<")
+					.Replace("&gt;", ">");
 		}
 
 		/// <summary>
