@@ -278,7 +278,7 @@ namespace Kelp
 		/// <returns>The current instance.</returns>
 		public new QueryString Add(string key, string value)
 		{
-			base.Add(key, value);
+			this[key] = value;
 			return this;
 		}
 
