@@ -95,6 +95,22 @@ namespace Kelp.Extensions
 		}
 
 		/// <summary>
+		/// Sets the specified attribute and returns the element instance.
+		/// </summary>
+		/// <param name="instance">The element whose attribute to set.</param>
+		/// <param name="name">The name of the attribute.</param>
+		/// <param name="value">The value of the attribute to set.</param>
+		/// <returns>The original element instance.</returns>
+		public static XmlElement Attribute(this XmlElement instance, string name, string value)
+		{
+			Contract.Requires<ArgumentNullException>(instance != null);
+			Contract.Requires<ArgumentNullException>(!string.IsNullOrWhiteSpace(name));
+
+			instance.SetAttribute(name, value);
+			return instance;
+		}
+
+		/// <summary>
 		/// Appends the specified element to the current node and returns it.
 		/// </summary>
 		/// <param name="instance">The target node to append the element to.</param>
