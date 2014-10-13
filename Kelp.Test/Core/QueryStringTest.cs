@@ -83,10 +83,10 @@ namespace Kelp.Test.Core
 			() => coll.Parse("a,b,c+d", new[] { ',', '+' }).ToString().ShouldEqual("a&b&c&d");
 
 		private It Should_convert_duplicates_initialized_from_collection_into_a_list = () =>
-			(new QueryString { { "a", "1" }, { "b", "2" }, { "c", "3" }, { "c", "4" } }).ToString().ShouldEqual("a=1&b=2&c=3,4");
+			(new QueryString { { "a", "1" }, { "b", "2" }, { "c", "3" }, { "c", "4" } }).ToString().ShouldEqual("a=1&b=2&c=4");
 
 		private It Should_convert_duplicates_initialized_from_string_into_a_list = () =>
-			new QueryString("a=1&b=2&c=3&c=4").ToString().ShouldEqual("a=1&b=2&c=3,4");
+			new QueryString("a=1&b=2&c=3&c=4").ToString().ShouldEqual("a=1&b=2&c=4");
 	}
 
 	[Subject(typeof(QueryString)), Tags(Categories.Core)]
