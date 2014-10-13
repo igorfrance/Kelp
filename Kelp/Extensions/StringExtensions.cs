@@ -33,6 +33,21 @@ namespace Kelp.Extensions
 		private static readonly Regex whitespaceExpr = new Regex(@"[\s\t\r\n]+", RegexOptions.Compiled);
 
 		/// <summary>
+		/// Formats the current string instance using the static string.Format method.
+		/// </summary>
+		/// <param name="subject">The string being formatted.</param>
+		/// <param name="replacements">The substitution values.</param>
+		/// <returns>Formatted <paramref name="subject"/>. 
+		/// </returns>
+		public static string F(this string subject, params object[] replacements)
+		{
+			if (string.IsNullOrWhiteSpace(subject) || replacements == null)
+				return subject;
+
+			return string.Format(subject, replacements);
+		}
+
+		/// <summary>
 		/// Returns a value indicating whether the specified <paramref name="value"/> occurs within this string.
 		/// </summary>
 		/// <param name="subject">The string being extended.</param>
@@ -349,6 +364,19 @@ namespace Kelp.Extensions
 				return subject;
 
 			return SubstitutionExpression.Replace(subject, (m) => values[m.Groups[1].Value] ?? m.Groups[0].Value);
+		}
+
+		/// <summary>
+		/// Searches the specified <paramref name="subject"/> for placeholders such as <code>{name}</code> 
+		/// and replaces them with values with matching keys in the <see cref="NameValueCollection"/> parsed from the specified
+		/// string <paramref name="values"/>.
+		/// </summary>
+		/// <param name="subject">The string to substitute.</param>
+		/// <param name="values">The substitution values packed as a string.</param>
+		/// <returns>The substituted <paramref name="subject"/>.</returns>
+		public static string Substitute(this string subject, string values)
+		{
+			return Substitute(subject, new QueryString(values));
 		}
 
 		/// <summary>
