@@ -88,7 +88,16 @@ namespace Kelp.Extensions
 
 			foreach (XmlNode child in children)
 			{
-				child.ParentNode.RemoveChild(child);
+				if (child is XmlAttribute)
+				{
+					var parent = ((XmlAttribute) child).OwnerElement;
+					parent.RemoveAttribute(child.Name, child.NamespaceURI);
+				}
+				else
+				{
+					child.ParentNode.RemoveChild(child);
+				}
+				
 			}
 
 			return instance;
