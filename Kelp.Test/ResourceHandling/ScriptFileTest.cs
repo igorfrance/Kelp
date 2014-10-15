@@ -90,7 +90,7 @@ namespace Kelp.Test.ResourceHandling
 		{
 			CodeFile.Create(Utilities.GetScriptPath("script2.js"));
 			
-		}).ShouldBeOfType<InvalidOperationException>();
+		}).ShouldBeAssignableTo<InvalidOperationException>();
 	}
 
 	[Subject(typeof(ScriptFile)), Tags(Categories.ResourceHandling)]
@@ -103,7 +103,7 @@ namespace Kelp.Test.ResourceHandling
 			CodeFile.Create(Utilities.GetScriptPath("script3.js"), "script3.js");
 			string content = subject.Content;
 		})
-		.ShouldBeOfType<InvalidOperationException>();
+		.ShouldBeAssignableTo<InvalidOperationException>();
 	}
 
 	[Subject(typeof(ScriptFile)), Tags(Categories.ResourceHandling)]
