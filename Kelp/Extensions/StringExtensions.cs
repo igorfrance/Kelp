@@ -233,6 +233,17 @@ namespace Kelp.Extensions
 		}
 
 		/// <summary>
+		/// A shortcut for <c>(x, y) => string.IsNullOrWhiteSpace(x) ? y : x;</c>
+		/// </summary>
+		/// <param name="subject">The string to use if not null or whitespace.</param>
+		/// <param name="alternative">The string to use if <paramref name="subject"/> is null or whitespace.</param>
+		/// <returns>string.IsNullOrWhiteSpace(x) ? y : x</returns>
+		public static string Or(this string subject, string alternative)
+		{
+			return string.IsNullOrWhiteSpace(subject) ? alternative : subject;
+		}
+
+		/// <summary>
 		/// Replaces the string matching the specified regular <paramref name="expression"/> string with the specified 
 		/// <paramref name="replacement"/> string.
 		/// </summary>
