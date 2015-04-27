@@ -159,10 +159,10 @@ namespace Kelp.ResourceHandling
 		{
 			get
 			{
-				DateTime dateSource = Util.GetDateLastModified(absolutePath);
+				DateTime dateSource = Kelp.Util.GetDateLastModified(absolutePath);
 				if (File.Exists(CachePath))
 				{
-					DateTime dateCache = Util.GetDateLastModified(CachePath);
+					DateTime dateCache = Kelp.Util.GetDateLastModified(CachePath);
 					if (dateCache > dateSource)
 						return dateCache;
 				}
@@ -278,12 +278,12 @@ namespace Kelp.ResourceHandling
 		private byte[] Load()
 		{
 			bool useCache = false;
-			byte[] imageData = null;
+			byte[] imageData;
 			stream = null;
 
-			DateTime dateSource = Util.GetDateLastModified(absolutePath);
+			DateTime dateSource = Kelp.Util.GetDateLastModified(absolutePath);
 
-			if (this.UseCache && File.Exists(CachePath) && Util.GetDateLastModified(CachePath) > dateSource)
+			if (this.UseCache && File.Exists(CachePath) && Kelp.Util.GetDateLastModified(CachePath) > dateSource)
 				useCache = true;
 
 			if (useCache)

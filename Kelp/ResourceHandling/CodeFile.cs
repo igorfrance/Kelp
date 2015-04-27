@@ -128,9 +128,9 @@ namespace Kelp.ResourceHandling
 			get
 			{
 				if (File.Exists(this.CacheName))
-					return Http.Util.GetDateLastModified(this.CacheName);
+					return Kelp.Util.GetDateLastModified(this.CacheName);
 
-				return Http.Util.GetDateLastModified(this.Dependencies);
+				return Kelp.Util.GetDateLastModified(this.Dependencies);
 			}
 		}
 
@@ -526,7 +526,7 @@ namespace Kelp.ResourceHandling
 			relativePath = relativePath ?? this.RelativePath;
 
 			ParseResult result = new ParseResult(sourceCode, container, relativePath);
-			string[] lines = sourceCode.Replace("\r", string.Empty).Split(new[] { '\n' });
+			string[] lines = sourceCode.Replace("\r", string.Empty).Split('\n');
 
 			foreach (string line in lines)
 			{
@@ -636,7 +636,7 @@ namespace Kelp.ResourceHandling
 					if (!File.Exists(referencePath))
 						return true;
 
-					var referenceModified = Http.Util.GetDateLastModified(referencePath);
+					var referenceModified = Kelp.Util.GetDateLastModified(referencePath);
 					if (referenceModified > cacheEntry.LastModified)
 						return true;
 				}
@@ -829,7 +829,7 @@ namespace Kelp.ResourceHandling
 				{
 					this.Exists = true;
 					this.Content = File.ReadAllText(path, Encoding.UTF8);
-					this.LastModified = Http.Util.GetDateLastModified(path);
+					this.LastModified = Kelp.Util.GetDateLastModified(path);
 				}
 			}
 		}

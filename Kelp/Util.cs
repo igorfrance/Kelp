@@ -307,6 +307,45 @@ namespace Kelp
 		}
 
 		/// <summary>
+		/// Gets the last modification date of the specified <paramref name="filePath"/>.
+		/// </summary>
+		/// <param name="filePath">The file path.</param>
+		/// <returns>the last modification date of the specified file</returns>
+		/// <remarks>
+		/// The greater of the <em>LastWriteTime</em> and <em>CreationTime</em> associated with the request.
+		/// </remarks>
+		public static DateTime GetDateLastModified(string filePath)
+		{
+			FileInfo i = new FileInfo(filePath);
+			DateTime wd = i.LastWriteTime;
+			DateTime cd = i.CreationTime;
+
+			return cd > wd ? cd : wd;
+		}
+
+		/// <summary>
+		/// Gets the latest modification date of specified list of <paramref name="files"/>.
+		/// </summary>
+		/// <param name="files">The files to check.</param>
+		/// <returns>The latest modification date of the specified list of <paramref name="files"/>.</returns>
+		public static DateTime GetDateLastModified(IEnumerable<string> files)
+		{
+			DateTime latestModified = new DateTime();
+			foreach (string file in files)
+			{
+				if (!File.Exists(file))
+					return DateTime.Now;
+
+				DateTime lastModified = GetDateLastModified(file);
+
+				if (lastModified > latestModified)
+					latestModified = lastModified;
+			}
+
+			return latestModified;
+		}
+
+		/// <summary>
 		/// Represents an assembly reference.
 		/// </summary>
 		public class Reference
