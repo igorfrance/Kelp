@@ -746,10 +746,16 @@ namespace Kelp.ResourceHandling
 			public void AddReference(string absolutePath, string relativePath = null)
 			{
 				relativePath = relativePath ?? Path.GetFileName(absolutePath);
-				if (IsPathInIncludeChain(absolutePath))
+
+				if (this.IsPathInIncludeChain(absolutePath))
 				{
-					log.FatalFormat("Including the referenced path would cause recursion due to it being present at a level higher above. The script is: {0}({1})", relativePath, absolutePath);
-					throw new InvalidOperationException("Including the referenced path would cause recursion due to it being present at a level higher above.");
+					//// this was causing issues when file A was including C, and file B was including C, but there was otherwise no 
+					//// circular reference.
+					//// log.FatalFormat("Including the referenced path would cause recursion due to it being present at a level higher above. The script is: {0}({1})", relativePath, absolutePath);
+					//// throw new InvalidOperationException("Including the referenced path would cause recursion due to it being present at a level higher above.");
+					
+					log.WarnFormat("Including the referenced path might cause recursion due to it being present at a level higher above. The script is: {0}({1})", relativePath, absolutePath);
+					return;
 				}
 
 				this.References.Add(absolutePath, relativePath);
