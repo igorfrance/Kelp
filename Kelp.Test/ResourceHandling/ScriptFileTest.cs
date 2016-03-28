@@ -84,16 +84,6 @@ namespace Kelp.Test.ResourceHandling
 	}
 
 	[Subject(typeof(ScriptFile)), Tags(Categories.ResourceHandling)]
-	public class When_getting_a_file_with_indirect_self_inclusion : CodeFileTest
-	{
-		private It Should_throw_an_InvalidOperationException = () => Catch.Exception(() => 
-		{
-			CodeFile.Create(Utilities.GetScriptPath("script2.js"));
-			
-		}).ShouldBeAssignableTo<InvalidOperationException>();
-	}
-
-	[Subject(typeof(ScriptFile)), Tags(Categories.ResourceHandling)]
 	public class When_getting_a_file_with_includes_itself : CodeFileTest
 	{
 		private static string content;
