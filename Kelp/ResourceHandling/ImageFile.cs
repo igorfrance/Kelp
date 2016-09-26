@@ -44,11 +44,14 @@ namespace Kelp.ResourceHandling
 		/// </summary>
 		protected QueryString parameters;
 
+		private const int MaxPathLength = 260;
+		
 		private static readonly ILog log = LogManager.GetLogger(typeof(ImageFile).FullName);
 		private static readonly List<string> extensions;
 		private readonly string absolutePath;
 		private byte[] imageBytes;
 		private MemoryStream stream;
+
 
 		static ImageFile()
 		{
@@ -133,7 +136,21 @@ namespace Kelp.ResourceHandling
 				if (this.TemporaryDirectory == null)
 					return null;
 
-				return Path.Combine(TemporaryDirectory, CacheName);
+				var fullPath = Path.Combine(this.TemporaryDirectory, this.CacheName);
+				if (fullPath.Length < MaxPathLength)
+					return fullPath;
+
+				var cacheName = this.CacheName;
+				var tempDir = this.TemporaryDirectory;
+
+				do
+				{
+					cacheName = cacheName.Substring(1);
+					fullPath = Path.Combine(tempDir, cacheName);
+				}
+				while (fullPath.Length >= MaxPathLength);
+
+				return fullPath;
 			}
 		}
 
