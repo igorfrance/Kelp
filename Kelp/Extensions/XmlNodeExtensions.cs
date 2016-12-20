@@ -344,9 +344,9 @@ namespace Kelp.Extensions
 		/// <returns>
 		/// The specified <paramref name="xpath"/> as a <see cref="string"/> value.
 		/// </returns>
-		public static string GetString(this XmlNode instance, string xpath, XmlNamespaceManager manager = null)
+		public static string GetString(this XmlNode instance, string xpath = null, XmlNamespaceManager manager = null)
 		{
-			XmlNode selection = instance.SelectSingleNode(xpath, manager);
+			XmlNode selection = xpath != null ? instance.SelectSingleNode(xpath, manager) : instance;
 			return selection == null ? null :
 				selection.InnerXml.Trim()
 					.Replace("&amp;", "&")
