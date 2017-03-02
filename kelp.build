@@ -6,6 +6,7 @@
 	<property name="buildConfiguration" value="Debug"/>
 	<property name="kelpTestPath" value=""/>
 	<property name="mspecPath" value="G:\cycle99\tools\mspec\mspec-clr4.exe" overwrite="false"/>
+	<property name="msbuildPath" value="C:\Program Files (x86)\MSBuild\14.0\Bin\MSBuild.exe" overwrite="false"/>
 
 	<target name="default">
 		<mkdir dir="${outputPath}/exe"/>
@@ -15,11 +16,11 @@
 		<call target="merge-dependencies"/>
 	</target>
 
-
 	<target name="build-solution">
-		<msbuild project="${solutionFile}" verbosity="Normal">
-			<property name="Configuration" value="${buildConfiguration}"/>
-		</msbuild>
+		<exec program="${msbuildPath}">
+			<arg value="${solutionFile}" />
+			<arg value="/p:Configuration=${buildConfiguration}" />
+		</exec>
 	</target>
 
 	<target name="merge-dependencies">
