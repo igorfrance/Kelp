@@ -88,13 +88,13 @@ namespace Kelp.ResourceHandling
 					try
 					{
 						if (CodeFile.IsFileExtensionSupported(extension))
-							ProcessCodeFileRequest(wrapped);
+							ResourceHandler.ProcessCodeFileRequest(wrapped);
 						else if (ImageFile.IsFileExtensionSupported(extension))
-							ProcessImageFileRequest(wrapped);
+							ResourceHandler.ProcessImageFileRequest(wrapped);
 						else
 						{
 							log.WarnFormat("The file extension {0} is not recognized as either a code or an image file", extension);
-							SendContent(wrapped, absolutePath);
+							ResourceHandler.SendContent(wrapped, absolutePath);
 						}
 
 						break;
@@ -133,7 +133,7 @@ namespace Kelp.ResourceHandling
 			Contract.Requires<ArgumentNullException>(context != null);
 
 			// 1
-			CodeFile file = CodeFile.Create(context.Request.PhysicalPath, context.Request.Path, GetTemporaryDirectory(context));
+			CodeFile file = CodeFile.Create(context.Request.PhysicalPath, context.Request.Path, ResourceHandler.GetTemporaryDirectory(context));
 
 			// 2 & 3
 			if (!Util.IsNoCacheRequest(context) && Util.IsCachedRequest(context) && !Util.IsFileUpdatedSinceCached(context, file.LastModified))
@@ -144,7 +144,7 @@ namespace Kelp.ResourceHandling
 			}
 
 			// 5
-			SendContent(context, file);
+			ResourceHandler.SendContent(context, file);
 		}
 
 		/// <summary>
@@ -159,7 +159,7 @@ namespace Kelp.ResourceHandling
 
 			// 1
 			ImageFile file = ImageFile.Create(
-				context.Request.PhysicalPath, new QueryString(context.Request.QueryString), GetTemporaryDirectory(context));
+				context.Request.PhysicalPath, new QueryString(context.Request.QueryString), ResourceHandler.GetTemporaryDirectory(context));
 
 			// 2 & 3
 			if (!Util.IsNoCacheRequest(context) && Util.IsCachedRequest(context) && !Util.IsFileUpdatedSinceCached(context, file.LastModified))
@@ -170,7 +170,7 @@ namespace Kelp.ResourceHandling
 			}
 
 			// 5
-			SendContent(context, file);
+			ResourceHandler.SendContent(context, file);
 		}
 
 		private static void SendContent(HttpContextBase context, string filename)
